@@ -11,6 +11,10 @@
 -export([start/0, start/1, add_child/4, remove_child/2]).
 -export([init/1]).
 
+
+%%%===================================================================
+%%% APIs
+%%%===================================================================
 start() ->
   supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 
@@ -23,21 +27,14 @@ remove_child(Supervisor_name, Child_name) ->
   supervisor:terminate_child(Supervisor_name, Child_name),
   supervisor:delete_child(Supervisor_name, Child_name).
 
+
+%%%===================================================================
+%%% supervisor implementation
+%%%===================================================================
 init([]) ->
   %% TODO:  Use generateSpec()
-  Zoo_Server = #{id => zoo,
-    start => {zoo_server, start, [local, zoo, []]},
-    restart => permanent,
-    shutdown => 2000,
-    type => worker,
-    modules => [zoo_server]},
-
-  Math_Server = #{id => math,
-    start => {math_server, start, [local, math]},
-    restart => permanent,
-    shutdown => 2000,
-    type => worker,
-    modules => [math_server]},
+  Zoo_Server = generate_spec(zoo_server, math, worker),
+  Math_Server = generate_spec(math_server, zoo, worker),
 
   {ok, {#{strategy => one_for_one,
     intensity => 1000,
@@ -45,6 +42,10 @@ init([]) ->
     [Zoo_Server, Math_Server]}
   }.
 
+
+%%%===================================================================
+%%% Internal functions
+%%%===================================================================
 generate_spec(Module,Name,Type)->
   #{id => Name,
     start => {Module, start, [local, Name, []]},
