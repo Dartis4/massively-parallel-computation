@@ -33,8 +33,8 @@ remove_child(Supervisor_name, Child_name) ->
 %%%===================================================================
 init([]) ->
   %% TODO:  Use generateSpec()
-  Zoo_Server = generate_spec(zoo_server, math, worker),
-  Math_Server = generate_spec(math_server, zoo, worker),
+  Zoo_Server = generate_spec(zoo_server, zoo, worker),
+  Math_Server = generate_spec(math_server, math, worker),
 
   {ok, {#{strategy => one_for_one,
     intensity => 1000,
