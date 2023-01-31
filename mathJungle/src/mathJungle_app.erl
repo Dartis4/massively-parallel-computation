@@ -1,16 +1,16 @@
 %%%-------------------------------------------------------------------
-%% @doc zoo public API
+%% @doc mathJungle public API
 %% @end
 %%%-------------------------------------------------------------------
 
--module(zoo_app).
+-module(mathJungle_app).
 
 -behaviour(application).
 
 -export([start/2, stop/1]).
 
 start(_StartType, _StartArgs) ->
-    zoo_sup:start_link().
+    mathJungle_sup:start_link().
 
 stop(_State) ->
     ok.
