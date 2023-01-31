@@ -1,8 +1,8 @@
-{application, zoo,
+{application, mathJungle,
  [{description, "An OTP application"},
   {vsn, "0.1.0"},
   {registered, []},
-  {mod, {zoo_app, []}},
+  {mod, {mathJungle_app, []}},
   {applications,
    [kernel,
     stdlib
