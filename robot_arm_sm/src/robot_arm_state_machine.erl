@@ -26,6 +26,8 @@
 -module(robot_arm_state_machine).
 -behaviour(gen_statem).
 
+-define(SERVER, ?MODULE).
+
 %% Only include the eunit testing library
 %% in the compiled code if testing is 
 %% being done.
@@ -130,7 +132,6 @@ handle_event({call,From}, next, ready,{Statem_name,State_data}) ->
     %Modify the state data and replace State_data below with the modified state data.
     {next_state, ready,{Statem_name,State_data},[{reply,From,Statem_name}]}.
 
-
 %% This code is included in the compiled code only if 
 %% 'rebar3 eunit' is being executed.
 -ifdef(EUNIT).
@@ -139,62 +140,62 @@ handle_event({call,From}, next, ready,{Statem_name,State_data}) ->
 %%
 start_to_above_comp_test() -> 
   {setup,
-  fun() -> pass end,
-  fun() -> pass end,
-  []}.
+  fun() -> gen_statem:start_link({local, ?SERVER}, ?MODULE, start, []) end,
+  fun() -> gen_statem:stop(?SERVER) end,
+  [?assertMatch({ok, _}, handle_event({call, nil}, above_comp, start, {?SERVER, nil}))]}.
 
 above_comp_to_open_above_comp_test() -> 
   {setup,
-  fun() -> pass end,
-  fun() -> pass end,
-  []}.
+  fun() -> gen_statem:start_link({local, ?SERVER}, ?MODULE, above_comp, []) end,
+  fun() -> gen_statem:stop(?SERVER) end,
+  [?assertMatch({ok, _}, handle_event({call, nil}, open_above_comp, above_comp, {?SERVER, nil}))]}.
 
 open_above_comp_to_lowered_above_comp_test() -> 
   {setup,
-  fun() -> pass end,
-  fun() -> pass end,
-  []}.
+  fun() -> gen_statem:start_link({local, ?SERVER}, ?MODULE, open_above_comp, []) end,
+  fun() -> gen_statem:stop(?SERVER) end,
+  [?assertMatch({ok, _}, handle_event({call, nil}, lowered_above_comp, open_above_comp, {?SERVER, nil}))]}.
 
 lowered_above_comp_to_claw_closed_test() -> 
   {setup,
-  fun() -> pass end,
-  fun() -> pass end,
-  []}.
+  fun() -> gen_statem:start_link({local, ?SERVER}, ?MODULE, lowered_above_comp, []) end,
+  fun() -> gen_statem:stop(?SERVER) end,
+  [?assertMatch({ok, _}, handle_event({call, nil}, claw_closed, lowered_above_comp, {?SERVER, nil}))]}.
 
 claw_closed_to_raised_above_comp_test() -> 
   {setup,
-  fun() -> pass end,
-  fun() -> pass end,
-  []}.
+  fun() -> gen_statem:start_link({local, ?SERVER}, ?MODULE, claw_closed, []) end,
+  fun() -> gen_statem:stop(?SERVER) end,
+  [?assertMatch({ok, _}, handle_event({call, nil}, raised_above_comp, claw_closed, {?SERVER, nil}))]}.
 
 raised_above_comp_to_above_box_test() -> 
   {setup,
-  fun() -> pass end,
-  fun() -> pass end,
-  []}.
+  fun() -> gen_statem:start_link({local, ?SERVER}, ?MODULE, rasied_above_comp, []) end,
+  fun() -> gen_statem:stop(?SERVER) end,
+  [?assertMatch({ok, _}, handle_event({call, nil}, above_box, raised_above_comp, {?SERVER, nil}))]}.
 
 above_box_to_lowered_above_box_test() -> 
   {setup,
-  fun() -> pass end,
-  fun() -> pass end,
-  []}.
+  fun() -> gen_statem:start_link({local, ?SERVER}, ?MODULE, above_box, []) end,
+  fun() -> gen_statem:stop(?SERVER) end,
+  [?assertMatch({ok, _}, handle_event({call, nil}, lowered_above_box, above_box, {?SERVER, nil}))]}.
 
 lowered_above_box_to_claw_open_test() -> 
   {setup,
-  fun() -> pass end,
-  fun() -> pass end,
-  []}.
+  fun() -> gen_statem:start_link({local, ?SERVER}, ?MODULE, lowered_above_box, []) end,
+  fun() -> gen_statem:stop(?SERVER) end,
+  [?assertMatch({ok, _}, handle_event({call, nil}, claw_open, lowered_above_box, {?SERVER, nil}))]}.
 
 claw_open_to_raised_above_box_test() -> 
   {setup,
-  fun() -> pass end,
-  fun() -> pass end,
-  []}.
+  fun() -> gen_statem:start_link({local, ?SERVER}, ?MODULE, claw_open, []) end,
+  fun() -> gen_statem:stop(?SERVER) end,
+  [?assertMatch({ok, _}, handle_event({call, nil}, above_box, claw_open, {?SERVER, nil}))]}.
 
 raised_above_box_to_above_comp_test() -> 
   {setup,
-  fun() -> pass end,
-  fun() -> pass end,
-  []}.
+  fun() -> gen_statem:start_link({local, ?SERVER}, ?MODULE, above_box, []) end,
+  fun() -> gen_statem:stop(?SERVER) end,
+  [?assertMatch({ok, _}, handle_event({call, nil}, above_comp, above_box, {?SERVER, nil}))]}.
 
 -endif.
