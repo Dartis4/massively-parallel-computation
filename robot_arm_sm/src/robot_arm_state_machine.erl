@@ -104,25 +104,35 @@ callback_mode() -> handle_event_function.
 
 %%% API functions
 
-start_to_above_comp() -> pass.
+start_to_above_comp(?SERVER) -> 
+    gen_statem:call(?SERVER, to_raised_above_comp_from_start).
 
-above_comp_to_open_above_comp() -> pass.
+above_comp_to_open_above_comp(?SERVER) -> 
+    gen_statem:call(?SERVER, to_open_above_comp).
 
-open_above_comp_to_lowered_above_comp() -> pass.
+open_above_comp_to_lowered_above_comp(?SERVER) -> 
+    gen_statem:call(?SERVER, to_lowered_above_comp).
 
-lowered_above_comp_to_claw_closed() -> pass.
+lowered_above_comp_to_claw_closed(?SERVER) -> 
+    gen_statem:call(?SERVER, to_closed_above_comp).
 
-claw_closed_to_raised_above_comp() -> pass.
+claw_closed_to_raised_above_comp(?SERVER) -> 
+    gen_statem:call(?SERVER, to_raised_above_comp).
 
-raised_above_comp_to_above_box() -> pass.
+raised_above_comp_to_above_box(?SERVER) -> 
+    gen_statem:call(?SERVER, to_raised_above_box_from_above_comp).
 
-above_box_to_lowered_above_box() -> pass.
+above_box_to_lowered_above_box(?SERVER) -> 
+    gen_statem:call(?SERVER, to_lowered_above_box).
 
-lowered_above_box_to_claw_open() -> pass.
+lowered_above_box_to_claw_open(?SERVER) -> 
+    gen_statem:call(?SERVER, to_open_above_box).
 
-claw_open_to_raised_above_box() -> pass.
+claw_open_to_raised_above_box(?SERVER) -> 
+    gen_statem:call(?SERVER, to_raised_above_box).
 
-raised_above_box_to_above_comp() -> pass.
+raised_above_box_to_above_comp(?SERVER) -> 
+    gen_statem:call(?SERVER, to_raised_above_comp_from_above_box).
 
 %%
 %% Used to select which registered worker is to be used next in 
