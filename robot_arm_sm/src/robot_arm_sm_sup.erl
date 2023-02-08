@@ -33,3 +33,18 @@ init([]) ->
     {ok, {SupFlags, ChildSpecs}}.
 
 %% internal functions
+% generate_spec(Module,Name,Type)->
+%   #{id => Name,
+%     start => {Module, start, [local, Name, [math1]]},
+%     restart => permanent,
+%     shutdown => 2000,
+%     type => Type,
+%     modules => [Module]}.
+
+% generate_spec(Module,Name,Type,Data)->
+%   #{id => Name,
+%     start => {Module, start, [local, Name, Data]},
+%     restart => permanent,
+%     shutdown => 2000,
+%     type => Type,
+%     modules => [Module]}.
