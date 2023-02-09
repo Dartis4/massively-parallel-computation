@@ -14,7 +14,9 @@
 -define(SERVER, ?MODULE).
 
 start_link() ->
-    supervisor:start_link({local, ?SERVER}, ?MODULE, []).
+    {ok, Pid} = supervisor:start_link({local, ?SERVER}, ?MODULE, []),
+    ok = gen_event:add_handler(?SERVER, sms_event, []),
+    {ok, Pid}.
 
 %% sup_flags() = #{strategy => strategy(),         % optional
 %%                 intensity => non_neg_integer(), % optional
@@ -26,10 +28,10 @@ start_link() ->
 %%                  type => worker(),       % optional
 %%                  modules => modules()}   % optional
 init([]) ->
+    Children = [{my_event, {gen_event, start_link, [{local, my_event}]},permanent, 5000, worker, [dynamic]}],
     SupFlags = #{strategy => one_for_all,
                  intensity => 0,
                  period => 1},
-    ChildSpecs = [],
-    {ok, {SupFlags, ChildSpecs}}.
+    {ok, {SupFlags, Children}}.
 
 %% internal functions
