@@ -26,6 +26,8 @@
 -module(dispatcher).
 -behaviour(gen_statem).
 
+-define(SERVER, ?MODULE).
+
 %% Only include the eunit testing library
 %% in the compiled code if testing is 
 %% being done.
@@ -111,13 +113,12 @@ iterate_worker(Bal_id) ->
 %% @private
 -spec handle_event({call, From::pid()}, EventContent::term(), State::term(), Data::term()) ->
         {next_state,NewState::term(),Data::term(),[{reply,From::pid(),Data::term()}]}.
-handle_event({call,From},blib,ready,{Bal_id,[Registered_name|T]}) ->
+handle_event({call,From},blib,ready,[Registered_name|T]) ->
     %Modify the state data and replace State_data below with the modified state data.
-    {next_state,ready,{Bal_id,T++[Registered_name]},[{reply,From,Registered_name}]};
+    {next_state,ready,T++[Registered_name],{reply,From,Registered_name}};
 
-handle_event({call, From},Command,_State,{Bal_id,_Worker_ids}) ->
-  {next_state,fail,{Bal_id,_Worker_ids},[{reply,From,{error,?MODULE,Bal_id,Command}}]}.
-
+handle_event({call, From},Command,_State,_Worker_ids) ->
+  {next_state,fail,_Worker_ids,[{reply,From,{error,?MODULE,From,Command}}]}.
 
 %% This code is included in the compiled code only if 
 %% 'rebar3 eunit' is being executed.
@@ -139,8 +140,8 @@ start_with_ids_test() ->
 
 get_next_worker_test() ->
   {setup,
-  fun() -> gen_statem:start_link({local,next_worker_tester},?MODULE,[worker1,worker2,worker3],[]) end,
-  fun() -> gen_statem:stop(next_worker_tester) end,
-  [?assertMatch({next_worker_tester, worker1}, gen_statem:call(next_worker_tester, blib))]}.
+  fun() -> start_link(worker_tester, [worker1,worker2,worker3]) end,
+  fun() -> gen_statem:stop(worker_tester) end,
+  [?assertMatch(worker1, iterate_worker(worker_tester))]}.
 
 -endif.
