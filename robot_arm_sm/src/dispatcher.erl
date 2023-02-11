@@ -26,6 +26,8 @@
 -module(dispatcher).
 -behaviour(gen_statem).
 
+-define(SERVER, ?MODULE).
+
 %% Only include the eunit testing library
 %% in the compiled code if testing is 
 %% being done.
@@ -118,6 +120,8 @@ handle_event({call,From},blib,ready,[Registered_name|T]) ->
 handle_event({call, From},Command,_State,_Worker_ids) ->
   {next_state,fail,_Worker_ids,[{reply,From,{error,?MODULE,Command}}]}.
 
+handle_event({call, From},Command,_State,_Worker_ids) ->
+  {next_state,fail,_Worker_ids,[{reply,From,{error,?MODULE,From,Command}}]}.
 
 %% This code is included in the compiled code only if 
 %% 'rebar3 eunit' is being executed.
