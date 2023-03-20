@@ -163,19 +163,12 @@ code_change(_OldVsn, State, _Extra) ->
 %%
 %% Unit tests go here. 
 %%
-% store_package_hardcoded_test() ->
-  % {setup,
-   % fun() -> gen_server:start_link({local, ?SERVER}, ?MODULE, [], []) end,
-   % fun() -> gen_server:stop(?SERVER) end,
-   % [?_assertEqual({reply, riak_reply, state}, gen_server:handle_cast({reg_name, uuid, data}, from, state))]
-  % }.
-
 store_package_mock_riak_test() ->
   {setup,
    fun() -> 
        meck:new(riakc_obj, [non_strict]),
-       meck:expect(riakc_obj, new, fun(_Key, _Uuid, _Data) -> request end),
        meck:new(riakc_pb_socket, [non_strict]),
+       meck:expect(riakc_obj, new, fun(_Bucket, _Key, _Data) -> request end),
        meck:expect(riakc_pb_socket, put, fun(_Riak_pid, _Request) -> status end)
    end,
    fun() -> 

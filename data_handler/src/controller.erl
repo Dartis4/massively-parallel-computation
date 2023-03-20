@@ -6,7 +6,7 @@
 %%        Creative Commons Attribution 4.0 International License</a>
 %%
 %%
--module(query_package_history_server).
+-module(controller).
 -behaviour(gen_server).
 
 -define(SERVER, ?MODULE).
@@ -19,16 +19,18 @@
 -endif.
 
 %% API
--export([start/0,start/3,stop/0]).
+-export([start/0,start/3,stop/0,stop/1]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
          terminate/2, code_change/3]).
 
-
 %%%===================================================================
 %%% API
 %%%===================================================================
+-export([
+         get_func/1
+        ]).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -40,7 +42,7 @@
 %%--------------------------------------------------------------------
 -spec start() -> {ok, pid()} | ignore | {error, term()}.
 start() ->
-  gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
+    gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
 %%--------------------------------------------------------------------
 %% @doc
 %% Starts a server using this module and registers the server using
@@ -54,7 +56,7 @@ start() ->
 %%--------------------------------------------------------------------
 -spec start(atom(),atom(),atom()) -> {ok, pid()} | ignore | {error, term()}.
 start(Registration_type,Name,Args) ->
-  gen_server:start_link({Registration_type, Name}, ?MODULE, Args, []).
+    gen_server:start_link({Registration_type, Name}, ?MODULE, Args, []).
 
 
 %%--------------------------------------------------------------------
@@ -65,6 +67,8 @@ start(Registration_type,Name,Args) ->
 %%--------------------------------------------------------------------
 -spec stop() -> {ok}|{error, term()}.
 stop() -> gen_server:call(?MODULE, stop).
+
+stop(Registered_name) -> gen_server:stop(Registered_name).
 
 %% Any other API functions go here.
 
@@ -81,7 +85,7 @@ stop() -> gen_server:call(?MODULE, stop).
 %%--------------------------------------------------------------------
 -spec init(term()) -> {ok, term()}|{ok, term(), number()}|ignore |{stop, term()}.
 init([]) ->
-  {ok,replace_up}.
+        {ok,replace_up}.
 %%--------------------------------------------------------------------
 %% @private
 %% @doc
@@ -90,18 +94,18 @@ init([]) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec handle_call(Request::term(), From::pid(), State::term()) ->
-  {reply, term(), term()} |
-  {reply, term(), term(), integer()} |
-  {noreply, term()} |
-  {noreply, term(), integer()} |
-  {stop, term(), term(), integer()} | 
-  {stop, term(), term()}.
-handle_call(_Request, _From, State) ->
-  {reply,history,State};
+                                  {reply, term(), term()} |
+                                  {reply, term(), term(), integer()} |
+                                  {noreply, term()} |
+                                  {noreply, term(), integer()} |
+                                  {stop, term(), term(), integer()} | 
+                                  {stop, term(), term()}.
+handle_call(multiply, _From, _State) ->
+        {reply, fun({X,Y}) -> X*Y end, _State};
 handle_call(stop, _From, _State) ->
-  {stop,normal,
-   replace_stopped,
-   down}. %% setting the server's internal state to down
+        {stop,normal,
+                replace_stopped,
+          down}. %% setting the server's internal state to down
 
 %%--------------------------------------------------------------------
 %% @private
@@ -111,11 +115,11 @@ handle_call(stop, _From, _State) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec handle_cast(Msg::term(), State::term()) -> {noreply, term()} |
-                                                 {noreply, term(), integer()} |
-                                                 {stop, term(), term()}.
+                                  {noreply, term(), integer()} |
+                                  {stop, term(), term()}.
 handle_cast(_Msg, State) ->
-  {noreply, State}.
-
+    {noreply, State}.
+    
 %%--------------------------------------------------------------------
 %% @private
 %% @doc
@@ -123,10 +127,10 @@ handle_cast(_Msg, State) ->
 %%
 %% @end
 -spec handle_info(Info::term(), State::term()) -> {noreply, term()} |
-                                                  {noreply, term(), integer()} |
-                                                  {stop, term(), term()}.
+                                   {noreply, term(), integer()} |
+                                   {stop, term(), term()}.
 handle_info(_Info, State) ->
-  {noreply, State}.
+    {noreply, State}.
 
 %%--------------------------------------------------------------------
 %% @private
@@ -140,8 +144,8 @@ handle_info(_Info, State) ->
 %%--------------------------------------------------------------------
 -spec terminate(Reason::term(), term()) -> term().
 terminate(_Reason, _State) ->
-  ok.
-
+    ok.
+    
 %%--------------------------------------------------------------------
 %% @private
 %% @doc
@@ -151,31 +155,35 @@ terminate(_Reason, _State) ->
 %%--------------------------------------------------------------------
 -spec code_change(term(), term(), term()) -> {ok, term()}.
 code_change(_OldVsn, State, _Extra) ->
-  {ok, State}.
-
+    {ok, State}.
+    
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
-
+get_func(Name) ->
+  gen_server:call(?MODULE, Name).
 
 
 -ifdef(EUNIT).
 %%
 %% Unit tests go here. 
 %%
-query_package_history_riak_test() ->
+start_test() ->
   {setup,
-   fun() -> 
-       meck:new(riakc_obj, [non_strict]),
-       meck:new(riakc_pb_socket, [non_strict]),
-       meck:expect(riakc_obj, get_value, fun(_Key) -> <<"value">> end),
-       meck:expect(riakc_pb_socket, get, fun(riak_pid, <<"package_bucket">>, <<"package_uuid">>) -> {ok, history} end)
-   end,
-   fun() -> 
-       meck:unload(riakc_obj),
-       meck:unload(riakc_pb_socket)
-   end,
-   [?assertMatch({reply, history, riak_pid}, handle_call({get_package, <<"package_uuid">>}, from, riak_pid))]
-  }.
+    fun() -> nil end,
+    fun() ->
+      gen_server:stop(),
+      gen_server:stop(test_start)
+    end,
+    [?assertMatch({ok, _}, start()),
+      ?assertMatch({ok, _}, start(local, test_start, []))]}.
+
+multiply_test() ->
+  {setup,
+    fun() -> start(local, test, []) end,
+    fun() -> stop(test) end,
+    [?assertEqual(12, (gen_server:call(?MODULE, multiply))({3,4})),
+    ?assertEqual(12, (get_func(multiply))({3,4}))]}.
+
 -endif.
 
