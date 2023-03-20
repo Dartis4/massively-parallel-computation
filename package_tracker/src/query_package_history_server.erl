@@ -175,16 +175,16 @@ query_package_history_riak_test() ->
    fun() -> 
        gen_server:start_link({local, ?SERVER}, ?MODULE, [], []),
        meck:new(riakc_obj, [non_strict]),
-       meck:expect(riakc_obj, new, fun(key, uuid, data) -> request end)
+       meck:expect(riakc_obj, get_value, fun(_Key)) -> <<"value">> end)
        meck:new(riakc_pb_socket, [non_strict]),
-       meck:expect(riakc_pb_socket, put, fun(riak_pid, request) -> status end)
+       meck:expect(riakc_pb_socket, get, fun(riak_pid, <<"package">>, uuid) -> {ok, #{key:value}} end)
    end,
    fun() -> 
        meck:unload(riakc_obj),
        meck:unload(riakc_pb_socket),
        gen_server:stop(?SERVER)
    end,
-   [?_assertEqual({noreply, state}, handle_cast({reg_name, uuid, data}, state))]
+   [?_assertEqual({reply, #{key:value}, riak_pid}, handle_call({reg_name, uuid},from, riak_pid))]
   }.
 -endif.
 
