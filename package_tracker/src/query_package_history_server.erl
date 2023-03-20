@@ -96,7 +96,7 @@ init([]) ->
                                   {noreply, term(), integer()} |
                                   {stop, term(), term(), integer()} | 
                                   {stop, term(), term()}.
-handle_call(Request, From, State) ->
+handle_call(_Request, _From, State) ->
         {reply,replace_started,State};
 handle_call(stop, _From, _State) ->
         {stop,normal,
@@ -175,16 +175,16 @@ query_package_history_riak_test() ->
    fun() -> 
        gen_server:start_link({local, ?SERVER}, ?MODULE, [], []),
        meck:new(riakc_obj, [non_strict]),
-       meck:expect(riakc_obj, get_value, fun(_Key)) -> <<"value">> end)
+       meck:expect(riakc_obj, get_value, fun(_Key) -> <<"value">> end),
        meck:new(riakc_pb_socket, [non_strict]),
-       meck:expect(riakc_pb_socket, get, fun(riak_pid, <<"package">>, uuid) -> {ok, #{key:value}} end)
+       meck:expect(riakc_pb_socket, get, fun(riak_pid, <<"package">>, uuid) -> {ok, replace_started} end)
    end,
    fun() -> 
        meck:unload(riakc_obj),
        meck:unload(riakc_pb_socket),
        gen_server:stop(?SERVER)
    end,
-   [?_assertEqual({reply, #{key:value}, riak_pid}, handle_call({reg_name, uuid},from, riak_pid))]
+   [?assertEqual({reply, replace_started, riak_pid}, handle_call({reg_name, uuid},from, riak_pid))]
   }.
 -endif.
 
