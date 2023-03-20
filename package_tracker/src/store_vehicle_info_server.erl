@@ -166,7 +166,7 @@ code_change(_OldVsn, State, _Extra) ->
 %%
 -record(location, {lat, long}).
 
-store_vehicle_mock_riak_test() ->
+store_vehicle_mock_riak_test_() ->
   {setup,
    fun() -> 
        meck:new(riakc_obj, [non_strict]),
@@ -174,14 +174,14 @@ store_vehicle_mock_riak_test() ->
        meck:expect(riakc_obj, new, fun(_Bucket, _Key, _Data) -> request end),
        meck:expect(riakc_pb_socket, put, fun(_Riak_pid, _Request) -> status end)
    end,
-   fun() -> 
+   fun(_) -> 
        meck:unload(riakc_obj),
        meck:unload(riakc_pb_socket)
    end,
    [
-    ?assertMatch({noreply, riak_pid}, store_package_info_server:handle_cast({store_vehicle, <<"vehicle_uuid">>, [#location{lat=43.813307, long=-111.781550}, -576460742739521957]}, riak_pid)),
-    ?assertMatch({noreply, riak_pid}, store_package_info_server:handle_cast({store_vehicle, <<"vehicle_uuid">>, []}, riak_pid)),
-    ?assertMatch({noreply, riak_pid}, store_package_info_server:handle_cast({store_vehicle, <<"">>, [#location{lat=43.813307, long=-111.781550}, -576460742739521957]}, riak_pid))
+    ?_assertMatch({noreply, riak_pid}, store_vehicle_info_server:handle_cast({store_vehicle, <<"vehicle_uuid">>, [#location{lat=43.813307, long=-111.781550}, -576460742739521957]}, riak_pid)),
+    ?_assertMatch({noreply, riak_pid}, store_vehicle_info_server:handle_cast({store_vehicle, <<"vehicle_uuid">>, []}, riak_pid)),
+    ?_assertMatch({noreply, riak_pid}, store_vehicle_info_server:handle_cast({store_vehicle, <<"">>, [#location{lat=43.813307, long=-111.781550}, -576460742739521957]}, riak_pid))
    ]
   }.
 -endif.

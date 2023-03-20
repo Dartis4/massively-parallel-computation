@@ -113,6 +113,15 @@ handle_call(stop, _From, _State) ->
 -spec handle_cast(Msg::term(), State::term()) -> {noreply, term()} |
                                                  {noreply, term(), integer()} |
                                                  {stop, term(), term()}.
+handle_cast({store_package, Key, Value}, Riak_Pid) ->
+  case Key =:= <<"">> of 
+    true ->
+      {noreply, Riak_Pid};
+    _ ->
+      Package = riakc_obj:new(<<"package">>, Key, Value),
+      _Status = riakc_pb_socket:put(Riak_Pid, Package),
+      {noreply, Riak_Pid}
+  end;
 handle_cast(_Msg, State) ->
   {noreply, State}.
 
@@ -163,22 +172,22 @@ code_change(_OldVsn, State, _Extra) ->
 %%
 %% Unit tests go here. 
 %%
-store_package_mock_riak_test() ->
+store_package_mock_riak_test_() ->
   {setup,
    fun() -> 
-       meck:new(riakc_obj, [non_strict]),
-       meck:new(riakc_pb_socket, [non_strict]),
+       meck:new(riakc_obj),
+       meck:new(riakc_pb_socket),
        meck:expect(riakc_obj, new, fun(_Bucket, _Key, _Data) -> request end),
        meck:expect(riakc_pb_socket, put, fun(_Riak_pid, _Request) -> status end)
    end,
-   fun() -> 
+   fun(_) -> 
        meck:unload(riakc_obj),
        meck:unload(riakc_pb_socket)
    end,
    [
-    ?assertMatch({noreply, riak_pid}, store_package_info_server:handle_cast({store_package, <<"package_uuid">>, [<<"holder_uuid">>]}, riak_pid)),
-    ?assertMatch({noreply, riak_pid}, store_package_info_server:handle_cast({store_package, <<"package_uuid">>, []}, riak_pid)),
-    ?assertMatch({noreply, riak_pid}, store_package_info_server:handle_cast({store_package, <<"">>, []}, riak_pid))
+    ?_assertMatch({noreply, riak_pid}, ?MODULE:handle_cast({store_package, <<"package_uuid">>, [<<"holder_uuid">>]}, riak_pid)),
+    ?_assertMatch({noreply, riak_pid}, ?MODULE:handle_cast({store_package, <<"package_uuid">>, []}, riak_pid)),
+    ?_assertMatch({noreply, riak_pid}, ?MODULE:handle_cast({store_package, <<"">>, []}, riak_pid))
    ]
   }.
 -endif.

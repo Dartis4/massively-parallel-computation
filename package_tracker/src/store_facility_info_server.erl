@@ -163,7 +163,7 @@ code_change(_OldVsn, State, _Extra) ->
 %%
 %% Unit tests go here. 
 %%
-store_facility_mock_riak_test() ->
+store_facility_mock_riak_test_() ->
   {setup,
    fun() -> 
        meck:new(riakc_obj, [non_strict]),
@@ -171,14 +171,14 @@ store_facility_mock_riak_test() ->
        meck:expect(riakc_obj, new, fun(_Key, _Uuid, _Data) -> request end),
        meck:expect(riakc_pb_socket, put, fun(_Riak_pid, _Request) -> status end)
    end,
-   fun() -> 
+   fun(_) -> 
        meck:unload(riakc_obj),
        meck:unload(riakc_pb_socket)
    end,
    [
-    ?assertMatch({noreply, riak_pid}, store_package_info_server:handle_cast({store_facility, <<"facility_uuid">>, ["Rexburg"]}, riak_pid)),
-    ?assertMatch({noreply, riak_pid}, store_package_info_server:handle_cast({store_facility, <<"facility_uuid">>, []}, riak_pid)),
-    ?assertMatch({noreply, riak_pid}, store_package_info_server:handle_cast({store_facility, <<"">>, []}, riak_pid))
+    ?_assertMatch({noreply, riak_pid}, store_facility_info_server:handle_cast({store_facility, <<"facility_uuid">>, ["Rexburg"]}, riak_pid)),
+    ?_assertMatch({noreply, riak_pid}, store_facility_info_server:handle_cast({store_facility, <<"facility_uuid">>, []}, riak_pid)),
+    ?_assertMatch({noreply, riak_pid}, store_facility_info_server:handle_cast({store_facility, <<"">>, []}, riak_pid))
    ]
   }.
 -endif.

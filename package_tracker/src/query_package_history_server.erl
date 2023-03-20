@@ -163,7 +163,7 @@ code_change(_OldVsn, State, _Extra) ->
 %%
 %% Unit tests go here. 
 %%
-query_package_history_riak_test() ->
+query_package_history_riak_test_() ->
   {setup,
    fun() -> 
        meck:new(riakc_obj, [non_strict]),
@@ -171,13 +171,13 @@ query_package_history_riak_test() ->
        meck:expect(riakc_obj, get_value, fun(_Key) -> <<"value">> end),
        meck:expect(riakc_pb_socket, get, fun(riak_pid, <<"package_bucket">>, <<"package_uuid">>) -> {ok, history} end)
    end,
-   fun() -> 
+   fun(_) -> 
        meck:unload(riakc_obj),
        meck:unload(riakc_pb_socket)
    end,
    [
-    ?assertMatch({reply, history, riak_pid}, handle_call({get_package_history, <<"package_uuid">>}, from, riak_pid)),
-    ?assertMatch({reply, history, riak_pid}, handle_call({get_package_history, <<"">>}, from, riak_pid))
+    ?_assertMatch({reply, history, riak_pid}, query_package_history_server:handle_call({get_package_history, <<"package_uuid">>}, from, riak_pid)),
+    ?_assertMatch({reply, history, riak_pid}, query_package_history_server:handle_call({get_package_history, <<"">>}, from, riak_pid))
    ]
   }.
 -endif.
