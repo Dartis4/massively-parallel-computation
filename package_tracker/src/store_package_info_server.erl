@@ -163,31 +163,26 @@ code_change(_OldVsn, State, _Extra) ->
 %%
 %% Unit tests go here. 
 %%
-store_package_hardcoded_test() ->
-  {setup,
-   fun() -> gen_server:start_link({local, package_hardcode}, ?MODULE, [], []) end,
-   fun() -> gen_server:stop(package_hardcode) end,
-   [?_assertEqual({reply, riak_reply, state}, gen_server:handle_cast({reg_name, uuid, data}, from, state))]
-  }.
+% store_package_hardcoded_test() ->
+  % {setup,
+   % fun() -> gen_server:start_link({local, ?SERVER}, ?MODULE, [], []) end,
+   % fun() -> gen_server:stop(?SERVER) end,
+   % [?_assertEqual({reply, riak_reply, state}, gen_server:handle_cast({reg_name, uuid, data}, from, state))]
+  % }.
 
 store_package_mock_riak_test() ->
   {setup,
    fun() -> 
        meck:new(riakc_obj, [non_strict]),
-       meck:expect(riakc_obj, new, fun() -> pass end),
+       meck:expect(riakc_obj, new, fun(_Key, _Uuid, _Data) -> request end)
+       meck:new(riakc_pb_socket, [non_strict]),
+       meck:expect(riakc_pb_socket, put, fun(_Riak_pid, _Request) -> status end)
    end,
    fun() -> 
-    meck:unload(riakc_obj),
+       meck:unload(riakc_obj),
+       meck:unload(riakc_pb_socket)
    end,
-   [?_assertEqual({reply, riak_reply, state}, gen_server:handle_cast({reg_name, uuid, data}, from, state))]
+   [?_assertMatch({noreply, state}, store_package_info_server:handle_cast({store_package, <<"package_uuid">>, [<<"holder_uuid">>]}, riak_pid))]
   }.
-
-store_package_with_riak_test() ->
-  {setup,
-   fun() -> end,
-   fun() -> end,
-   []
-  }.
-
 -endif.
 
