@@ -96,7 +96,7 @@ init([]) ->
   {noreply, term(), integer()} |
   {stop, term(), term(), integer()} | 
   {stop, term(), term()}.
-handle_call(Request, From, State) ->
+handle_call(_Request, _From, State) ->
   {reply,replace_started,State};
 handle_call(stop, _From, _State) ->
   {stop,normal,
@@ -174,7 +174,7 @@ store_package_mock_riak_test() ->
   {setup,
    fun() -> 
        meck:new(riakc_obj, [non_strict]),
-       meck:expect(riakc_obj, new, fun(_Key, _Uuid, _Data) -> request end)
+       meck:expect(riakc_obj, new, fun(_Key, _Uuid, _Data) -> request end),
        meck:new(riakc_pb_socket, [non_strict]),
        meck:expect(riakc_pb_socket, put, fun(_Riak_pid, _Request) -> status end)
    end,
@@ -182,7 +182,7 @@ store_package_mock_riak_test() ->
        meck:unload(riakc_obj),
        meck:unload(riakc_pb_socket)
    end,
-   [?_assertMatch({noreply, state}, store_package_info_server:handle_cast({store_package, <<"package_uuid">>, [<<"holder_uuid">>]}, riak_pid))]
+   [?assertMatch({noreply, riak_pid}, store_package_info_server:handle_cast({store_package, <<"package_uuid">>, [<<"holder_uuid">>]}, riak_pid))]
   }.
 -endif.
 
