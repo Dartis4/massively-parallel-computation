@@ -175,7 +175,10 @@ query_package_history_riak_test() ->
        meck:unload(riakc_obj),
        meck:unload(riakc_pb_socket)
    end,
-   [?assertMatch({reply, history, riak_pid}, handle_call({get_package, <<"package_uuid">>}, from, riak_pid))]
+   [
+    ?assertMatch({reply, history, riak_pid}, handle_call({get_package_history, <<"package_uuid">>}, from, riak_pid)),
+    ?assertMatch({reply, history, riak_pid}, handle_call({get_package_history, <<"">>}, from, riak_pid))
+   ]
   }.
 -endif.
 

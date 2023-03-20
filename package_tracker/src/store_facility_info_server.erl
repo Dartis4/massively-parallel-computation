@@ -175,7 +175,11 @@ store_facility_mock_riak_test() ->
        meck:unload(riakc_obj),
        meck:unload(riakc_pb_socket)
    end,
-   [?assertMatch({noreply, riak_pid}, store_package_info_server:handle_cast({store_facility, <<"facility_uuid">>, ["Rexburg"]}, riak_pid))]
+   [
+    ?assertMatch({noreply, riak_pid}, store_package_info_server:handle_cast({store_facility, <<"facility_uuid">>, ["Rexburg"]}, riak_pid)),
+    ?assertMatch({noreply, riak_pid}, store_package_info_server:handle_cast({store_facility, <<"facility_uuid">>, []}, riak_pid)),
+    ?assertMatch({noreply, riak_pid}, store_package_info_server:handle_cast({store_facility, <<"">>, []}, riak_pid))
+   ]
   }.
 -endif.
 

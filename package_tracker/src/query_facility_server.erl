@@ -175,7 +175,10 @@ query_facility_riak_test() ->
        meck:unload(riakc_obj),
        meck:unload(riakc_pb_socket)
    end,
-   [?assertMatch({reply, history, riak_pid}, handle_call({get_facility, <<"facility_uuid">>}, from, riak_pid))]
+   [
+    ?assertMatch({reply, history, riak_pid}, handle_call({get_facility, <<"facility_uuid">>}, from, riak_pid)),
+    ?assertMatch({reply, history, riak_pid}, handle_call({get_facility, <<"">>}, from, riak_pid))
+   ]
   }.
 -endif.
 

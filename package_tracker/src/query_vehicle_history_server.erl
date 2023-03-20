@@ -175,7 +175,10 @@ query_vehicle_history_riak_test() ->
        meck:unload(riakc_obj),
        meck:unload(riakc_pb_socket)
    end,
-   [?assertMatch({reply, history, riak_pid}, handle_call({get_vehicle, <<"vehicle_uuid">>}, from, riak_pid))]
+   [
+    ?assertMatch({reply, history, riak_pid}, handle_call({get_vehicle_history, <<"vehicle_uuid">>}, from, riak_pid)),
+    ?assertMatch({reply, history, riak_pid}, handle_call({get_vehicle_history, <<"">>}, from, riak_pid))
+   ]
   }.
 -endif.
 

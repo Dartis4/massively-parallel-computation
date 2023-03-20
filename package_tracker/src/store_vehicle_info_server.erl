@@ -178,7 +178,11 @@ store_vehicle_mock_riak_test() ->
        meck:unload(riakc_obj),
        meck:unload(riakc_pb_socket)
    end,
-   [?assertMatch({noreply, riak_pid}, store_package_info_server:handle_cast({store_vehicle, <<"vehicle_uuid">>, [#location{lat=43.813307, long=-111.781550}, -576460742739521957]}, riak_pid))]
+   [
+    ?assertMatch({noreply, riak_pid}, store_package_info_server:handle_cast({store_vehicle, <<"vehicle_uuid">>, [#location{lat=43.813307, long=-111.781550}, -576460742739521957]}, riak_pid)),
+    ?assertMatch({noreply, riak_pid}, store_package_info_server:handle_cast({store_vehicle, <<"vehicle_uuid">>, []}, riak_pid)),
+    ?assertMatch({noreply, riak_pid}, store_package_info_server:handle_cast({store_vehicle, <<"">>, [#location{lat=43.813307, long=-111.781550}, -576460742739521957]}, riak_pid))
+   ]
   }.
 -endif.
 
