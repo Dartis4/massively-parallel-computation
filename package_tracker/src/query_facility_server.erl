@@ -19,11 +19,11 @@
 -endif.
 
 %% API
--export([start/0,start/3,stop/0]).
+-export([start/0, start/3, stop/0]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
-         terminate/2, code_change/3]).
+  terminate/2, code_change/3]).
 
 
 %%%===================================================================
@@ -52,8 +52,8 @@ start() ->
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec start(atom(),atom(),atom()) -> {ok, pid()} | ignore | {error, term()}.
-start(Registration_type,Name,Args) ->
+-spec start(atom(), atom(), atom()) -> {ok, pid()} | ignore | {error, term()}.
+start(Registration_type, Name, Args) ->
   gen_server:start_link({Registration_type, Name}, ?MODULE, Args, []).
 
 
@@ -81,7 +81,7 @@ stop() -> gen_server:call(?MODULE, stop).
 %%--------------------------------------------------------------------
 -spec init(term()) -> {ok, term()}|{ok, term(), number()}|ignore |{stop, term()}.
 init([]) ->
-  {ok,replace_up}.
+  {ok, replace_up}.
 %%--------------------------------------------------------------------
 %% @private
 %% @doc
@@ -89,30 +89,30 @@ init([]) ->
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec handle_call(Request::term(), From::pid(), State::term()) ->
+-spec handle_call(Request :: term(), From :: pid(), State :: term()) ->
   {reply, term(), term()} |
   {reply, term(), term(), integer()} |
   {noreply, term()} |
   {noreply, term(), integer()} |
-  {stop, term(), term(), integer()} | 
+  {stop, term(), term(), integer()} |
   {stop, term(), term()}.
 
-handle_call({query_facility,Facility_Uuid}, _From, Riak_PID) ->
-    	%{reply,<<bob,sue,alice>>,Riak_PID};
-	case riakc_pb_socket:get(Riak_PID, <<"facility">>, Facility_Uuid) of 
-	    {ok,Fetched}->
-		%reply with the value as a binary, not the key nor the bucket.
-		    {reply,binary_to_term(riakc_obj:get_value(Fetched)),Riak_PID};
-	     Error ->
-		    {reply,Error,Riak_PID}
-	end;
+handle_call({query_facility, Facility_Uuid}, _From, Riak_PID) ->
+  %{reply,<<bob,sue,alice>>,Riak_PID};
+  case riakc_pb_socket:get(Riak_PID, <<"facility">>, Facility_Uuid) of
+    {ok, Fetched} ->
+      %reply with the value as a binary, not the key nor the bucket.
+      {reply, binary_to_term(riakc_obj:get_value(Fetched)), Riak_PID};
+    Error ->
+      {reply, Error, Riak_PID}
+  end;
 
 handle_call(_Request, _From, State) ->
-  {reply,history,State};
+  {reply, history, State};
 handle_call(stop, _From, _State) ->
-  {stop,normal,
-   replace_stopped,
-   down}. %% setting the server's internal state to down
+  {stop, normal,
+    replace_stopped,
+    down}. %% setting the server's internal state to down
 
 %%--------------------------------------------------------------------
 %% @private
@@ -121,9 +121,9 @@ handle_call(stop, _From, _State) ->
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec handle_cast(Msg::term(), State::term()) -> {noreply, term()} |
-                                                 {noreply, term(), integer()} |
-                                                 {stop, term(), term()}.
+-spec handle_cast(Msg :: term(), State :: term()) -> {noreply, term()} |
+{noreply, term(), integer()} |
+{stop, term(), term()}.
 handle_cast(_Msg, State) ->
   {noreply, State}.
 
@@ -133,9 +133,9 @@ handle_cast(_Msg, State) ->
 %% Handling all non call/cast messages
 %%
 %% @end
--spec handle_info(Info::term(), State::term()) -> {noreply, term()} |
-                                                  {noreply, term(), integer()} |
-                                                  {stop, term(), term()}.
+-spec handle_info(Info :: term(), State :: term()) -> {noreply, term()} |
+{noreply, term(), integer()} |
+{stop, term(), term()}.
 handle_info(_Info, State) ->
   {noreply, State}.
 
@@ -149,7 +149,7 @@ handle_info(_Info, State) ->
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec terminate(Reason::term(), term()) -> term().
+-spec terminate(Reason :: term(), term()) -> term().
 terminate(_Reason, _State) ->
   ok.
 
@@ -176,20 +176,20 @@ code_change(_OldVsn, State, _Extra) ->
 %%
 query_facility_riak_test_() ->
   {setup,
-   fun() -> 
-       meck:new(riakc_obj, [non_strict]),
-       meck:new(riakc_pb_socket, [non_strict]),
-       meck:expect(riakc_obj, get_value, fun(_Key) -> <<"value">> end),
-       meck:expect(riakc_pb_socket, get, fun(riak_pid, <<"facility_bucket">>, <<"facility_uuid">>) -> {ok, history} end)
-   end,
-   fun(_) -> 
-       meck:unload(riakc_obj),
-       meck:unload(riakc_pb_socket)
-   end,
-   [
-    ?_assertMatch({reply, history, riak_pid}, query_facility_server:handle_call({get_facility, <<"facility_uuid">>}, from, riak_pid)),
-    ?_assertMatch({reply, history, riak_pid}, query_facility_server:handle_call({get_facility, <<"">>}, from, riak_pid))
-   ]
+    fun() ->
+      meck:new(riakc_obj, [non_strict]),
+      meck:new(riakc_pb_socket, [non_strict]),
+      meck:expect(riakc_obj, get_value, fun(_Key) -> <<"value">> end),
+      meck:expect(riakc_pb_socket, get, fun(riak_pid, <<"facility_bucket">>, <<"facility_uuid">>) -> {ok, history} end)
+    end,
+    fun(_) ->
+      meck:unload(riakc_obj),
+      meck:unload(riakc_pb_socket)
+    end,
+    [
+      ?_assertMatch({reply, history, riak_pid}, query_facility_server:handle_call({get_facility, <<"facility_uuid">>}, from, riak_pid)),
+      ?_assertMatch({reply, history, riak_pid}, query_facility_server:handle_call({get_facility, <<"">>}, from, riak_pid))
+    ]
   }.
 -endif.
 

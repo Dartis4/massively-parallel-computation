@@ -98,6 +98,7 @@ init([]) ->
   {stop, term(), term()}.
 handle_call(_Request, _From, State) ->
   {reply,replace_started,State};
+
 handle_call(stop, _From, _State) ->
   {stop,normal,
    replace_stopped,
