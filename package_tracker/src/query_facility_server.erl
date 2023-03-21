@@ -97,9 +97,9 @@ init([]) ->
   {stop, term(), term(), integer()} |
   {stop, term(), term()}.
 
-handle_call({query_facility, Facility_Uuid}, _From, Riak_PID) ->
+handle_call({get_facility, Facility_uuid}, _From, Riak_PID) ->
   %{reply,<<bob,sue,alice>>,Riak_PID};
-  case riakc_pb_socket:get(Riak_PID, <<"facility">>, Facility_Uuid) of
+  case riakc_pb_socket:get(Riak_PID, <<"facility">>, Facility_uuid) of
     {ok, Fetched} ->
       %reply with the value as a binary, not the key nor the bucket.
       {reply, binary_to_term(riakc_obj:get_value(Fetched)), Riak_PID};
