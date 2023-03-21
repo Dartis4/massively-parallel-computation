@@ -114,6 +114,15 @@ handle_call(stop, _From, _State) ->
 -spec handle_cast(Msg::term(), State::term()) -> {noreply, term()} |
                                                  {noreply, term(), integer()} |
                                                  {stop, term(), term()}.
+handle_cast({store_vehicle, Key, Value}, Riak_Pid) ->
+  case Key =:= <<"">> of 
+    true ->
+      {noreply, Riak_Pid};
+    _ ->
+      Vehicle = riakc_obj:new(<<"vehicle">>, Key, Value),
+      _Status = riakc_pb_socket:put(Riak_Pid, Vehicle),
+      {noreply, Riak_Pid}
+  end;
 handle_cast(_Msg, State) ->
   {noreply, State}.
 
