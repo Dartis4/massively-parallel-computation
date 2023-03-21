@@ -96,6 +96,19 @@ init([]) ->
   {noreply, term(), integer()} |
   {stop, term(), term(), integer()} | 
   {stop, term(), term()}.
+
+
+handle_call({query_package_history,Package_Uuid}, _From, Riak_PID) ->
+    	%{reply,<<bob,sue,alice>>,Riak_PID};
+	case riakc_pb_socket:get(Riak_PID, <<"package">>, Package_Uuid) of 
+	    {ok,Fetched}->
+		%reply with the value as a binary, not the key nor the bucket.
+		    {reply,binary_to_term(riakc_obj:get_value(Fetched)),Riak_PID};
+	     Error ->
+		    {reply,Error,Riak_PID}
+	end;
+
+
 handle_call(_Request, _From, State) ->
   {reply,history,State};
 handle_call(stop, _From, _State) ->
