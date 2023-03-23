@@ -25,7 +25,7 @@
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
          terminate/2, code_change/3]).
 
--export([store_package/3]).
+-export([store_package/2]).
 
 
 %%%===================================================================
@@ -170,8 +170,8 @@ code_change(_OldVsn, State, _Extra) ->
 %%% Internal functions
 %%%===================================================================
 
-store_package(Registered_name, Package_uuid, Holders) ->
-  gen_server:cast(Registered_name, {store_package, Package_uuid, Holders}).
+store_package(Package_uuid, Holders) ->
+  gen_server:cast(?SERVER, {store_package, Package_uuid, Holders}).
 
 
 -ifdef(EUNIT).
@@ -208,6 +208,18 @@ store_package_mock_riak_test_() ->
     ?_assertMatch({noreply, riak_pid}, ?MODULE:handle_cast({store_package, <<"package_uuid">>, [<<"holder_uuid">>]}, riak_pid)),
     ?_assertMatch({noreply, riak_pid}, ?MODULE:handle_cast({store_package, <<"package_uuid">>, []}, riak_pid)),
     ?_assertMatch({noreply, riak_pid}, ?MODULE:handle_cast({store_package, <<"">>, []}, riak_pid))
+   ]
+  }.
+store_in_riak_test_() ->
+  {setup,
+   fun() ->
+       start()
+   end,
+   fun(_) ->
+       stop()
+   end,
+   [
+    ?_assertMatch({noreply, _}, store_package(<<"P123">>, []))
    ]
   }.
 -endif.
