@@ -23,7 +23,9 @@
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
-  terminate/2, code_change/3]).
+         terminate/2, code_change/3]).
+
+-export([query_package_history/2]).
 
 
 %%%===================================================================
@@ -81,7 +83,14 @@ stop() -> gen_server:call(?MODULE, stop).
 %%--------------------------------------------------------------------
 -spec init(term()) -> {ok, term()}|{ok, term(), number()}|ignore |{stop, term()}.
 init([]) ->
-  {ok, replace_up}.
+  case riakc_pb_socket:start_link("10.124.0.3", 8087, [autoreconnect, keepalive]) of
+    {ok,Riak_pid} -> 
+      {ok,Riak_pid};
+    {error,Term} ->
+      io:format("~p~n", [Term]),
+      {stop,link_failure}
+  end.
+
 %%--------------------------------------------------------------------
 %% @private
 %% @doc
@@ -109,8 +118,8 @@ handle_call({get_package_history, Package_uuid}, _From, Riak_Pid) ->
   end;
 handle_call(stop, _From, _State) ->
   {stop, normal,
-    replace_stopped,
-    down}. %% setting the server's internal state to down
+   replace_stopped,
+   down}. %% setting the server's internal state to down
 
 %%--------------------------------------------------------------------
 %% @private
@@ -120,8 +129,8 @@ handle_call(stop, _From, _State) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec handle_cast(Msg :: term(), State :: term()) -> {noreply, term()} |
-{noreply, term(), integer()} |
-{stop, term(), term()}.
+                                                     {noreply, term(), integer()} |
+                                                     {stop, term(), term()}.
 handle_cast(_Msg, State) ->
   {noreply, State}.
 
@@ -132,8 +141,8 @@ handle_cast(_Msg, State) ->
 %%
 %% @end
 -spec handle_info(Info :: term(), State :: term()) -> {noreply, term()} |
-{noreply, term(), integer()} |
-{stop, term(), term()}.
+                                                      {noreply, term(), integer()} |
+                                                      {stop, term(), term()}.
 handle_info(_Info, State) ->
   {noreply, State}.
 
@@ -166,28 +175,45 @@ code_change(_OldVsn, State, _Extra) ->
 %%% Internal functions
 %%%===================================================================
 
+query_package_history(Registered_name, Package_uuid) ->
+  gen_server:call(Registered_name, {get_package_history, Package_uuid}).
 
 
 -ifdef(EUNIT).
 %%
 %% Unit tests go here. 
 %%
+server_start_test()->
+  {setup,
+   fun()-> 
+       % meck:new(riakc_pb_socket), 
+       % meck:expect(riakc_pb_socket, start_link, fun(_Domain, _Port) -> {ok, riak_pid} end)
+       none
+   end,
+   fun()-> 
+       % meck:unload(riakc_pb_socket),
+       gen_server:stop(?SERVER)
+   end,
+   [
+    ?assertMatch({ok, _}, start())
+   ]
+  }.
 query_package_history_riak_test_() ->
   {setup,
-    fun() ->
-      meck:new(riakc_obj),
-      meck:new(riakc_pb_socket),
-      meck:expect(riakc_obj, get_value, fun(_Key) -> term_to_binary("history") end),
-      meck:expect(riakc_pb_socket, get, fun(_Riak_Pid, _Bucket, _Key) -> {ok, riakc_obj} end)
-    end,
-    fun(_) ->
-      meck:unload(riakc_obj),
-      meck:unload(riakc_pb_socket)
-    end,
-    [
-      ?_assertMatch({reply, "history", riak_pid}, query_package_history_server:handle_call({get_package_history, <<"package_uuid">>}, from, riak_pid)),
-      ?_assertMatch({reply, "history", riak_pid}, query_package_history_server:handle_call({get_package_history, <<"">>}, from, riak_pid))
-    ]
+   fun() ->
+       meck:new(riakc_obj),
+       meck:new(riakc_pb_socket),
+       meck:expect(riakc_obj, get_value, fun(_Key) -> term_to_binary("history") end),
+       meck:expect(riakc_pb_socket, get, fun(_Riak_Pid, _Bucket, _Key) -> {ok, riakc_obj} end)
+   end,
+   fun(_) ->
+       meck:unload(riakc_obj),
+       meck:unload(riakc_pb_socket)
+   end,
+   [
+    ?_assertMatch({reply, "history", riak_pid}, query_package_history_server:handle_call({get_package_history, <<"package_uuid">>}, from, riak_pid)),
+    ?_assertMatch({reply, "history", riak_pid}, query_package_history_server:handle_call({get_package_history, <<"">>}, from, riak_pid))
+   ]
   }.
 -endif.
 

@@ -25,6 +25,8 @@
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
          terminate/2, code_change/3]).
 
+-export([store_package/3]).
+
 
 %%%===================================================================
 %%% API
@@ -81,7 +83,8 @@ stop() -> gen_server:call(?MODULE, stop).
 %%--------------------------------------------------------------------
 -spec init(term()) -> {ok, term()}|{ok, term(), number()}|ignore |{stop, term()}.
 init([]) ->
-  {ok,replace_up}.
+  riakc_pb_socket:start_link("database.dartis.dev", 8087).
+
 %%--------------------------------------------------------------------
 %% @private
 %% @doc
@@ -167,12 +170,28 @@ code_change(_OldVsn, State, _Extra) ->
 %%% Internal functions
 %%%===================================================================
 
+store_package(Registered_name, Package_uuid, Holders) ->
+  gen_server:cast(Registered_name, {store_package, Package_uuid, Holders}).
 
 
 -ifdef(EUNIT).
 %%
 %% Unit tests go here. 
 %%
+server_start_test_()->
+  {setup,
+   fun()-> 
+       meck:new(riakc_pb_socket), 
+       meck:expect(riakc_pb_socket, start_link, fun(_Domain, _Port) -> {ok, riak_pid} end)
+   end,
+   fun(_)-> 
+       gen_server:stop(?SERVER),
+       meck:unload(riakc_pb_socket)
+   end,
+   [
+    ?_assertMatch({ok, _}, start())
+   ]
+  }.
 store_package_mock_riak_test_() ->
   {setup,
    fun() -> 
