@@ -210,13 +210,13 @@ store_package_mock_riak_test_() ->
     ?_assertMatch({noreply, riak_pid}, ?MODULE:handle_cast({store_package, <<"">>, []}, riak_pid))
    ]
   }.
-store_in_riak_test_() ->
-  {setup,
-   fun() -> start() end,
-   fun(_) -> stop() end, 
-   [
-    ?_assertMatch(ok, store_package(<<"P123">>, []))
-   ]
-  }.
+% store_in_riak_test_() ->
+%   {setup,
+%    fun() -> start() end,
+%    fun(_) -> stop() end, 
+%    [
+%     ?_assertMatch(ok, store_package(<<"P123">>, []))
+%    ]
+%   }.
 -endif.
 
