@@ -212,14 +212,10 @@ store_package_mock_riak_test_() ->
   }.
 store_in_riak_test_() ->
   {setup,
-   fun() ->
-       start()
-   end,
-   fun(_) ->
-       stop()
-   end,
+   fun() -> start() end,
+   fun(_) -> stop() end, 
    [
-    ?_assertMatch({noreply, _}, store_package(<<"P123">>, []))
+    ?_assertMatch(ok, store_package(<<"P123">>, []))
    ]
   }.
 -endif.

@@ -25,7 +25,7 @@
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
          terminate/2, code_change/3]).
 
--export([query_package_history/2]).
+-export([query_package_history/1]).
 
 
 %%%===================================================================
@@ -83,11 +83,10 @@ stop() -> gen_server:call(?MODULE, stop).
 %%--------------------------------------------------------------------
 -spec init(term()) -> {ok, term()}|{ok, term(), number()}|ignore |{stop, term()}.
 init([]) ->
-  case riakc_pb_socket:start_link("10.124.0.3", 8087, [autoreconnect, keepalive]) of
+  case riakc_pb_socket:start_link("database.dartis.dev", 8087) of
     {ok,Riak_pid} -> 
       {ok,Riak_pid};
-    {error,Term} ->
-      io:format("~p~n", [Term]),
+    _ ->
       {stop,link_failure}
   end.
 
@@ -108,7 +107,6 @@ init([]) ->
 
 
 handle_call({get_package_history, Package_uuid}, _From, Riak_Pid) ->
-  %{reply,<<bob,sue,alice>>,Riak_PID};
   case riakc_pb_socket:get(Riak_Pid, <<"package">>, Package_uuid) of
     {ok, Fetched} ->
       %reply with the value as a binary, not the key nor the bucket.
@@ -175,8 +173,8 @@ code_change(_OldVsn, State, _Extra) ->
 %%% Internal functions
 %%%===================================================================
 
-query_package_history(Registered_name, Package_uuid) ->
-  gen_server:call(Registered_name, {get_package_history, Package_uuid}).
+query_package_history(Package_uuid) ->
+  gen_server:call(?SERVER, {get_package_history, Package_uuid}).
 
 
 -ifdef(EUNIT).
@@ -186,12 +184,11 @@ query_package_history(Registered_name, Package_uuid) ->
 server_start_test()->
   {setup,
    fun()-> 
-       % meck:new(riakc_pb_socket), 
-       % meck:expect(riakc_pb_socket, start_link, fun(_Domain, _Port) -> {ok, riak_pid} end)
-       none
+       meck:new(riakc_pb_socket), 
+       meck:expect(riakc_pb_socket, start_link, fun(_Domain, _Port) -> {ok, riak_pid} end)
    end,
    fun()-> 
-       % meck:unload(riakc_pb_socket),
+       meck:unload(riakc_pb_socket),
        gen_server:stop(?SERVER)
    end,
    [
@@ -213,6 +210,14 @@ query_package_history_riak_test_() ->
    [
     ?_assertMatch({reply, "history", riak_pid}, query_package_history_server:handle_call({get_package_history, <<"package_uuid">>}, from, riak_pid)),
     ?_assertMatch({reply, "history", riak_pid}, query_package_history_server:handle_call({get_package_history, <<"">>}, from, riak_pid))
+   ]
+  }.
+query_riak_test_() ->
+  {setup,
+   fun() -> start() end,
+   fun(_) -> stop() end, 
+   [
+    ?_assertMatch([], query_package_history(<<"P123">>))
    ]
   }.
 -endif.
