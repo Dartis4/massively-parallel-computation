@@ -97,18 +97,15 @@ init([]) ->
   {stop, term(), term(), integer()} |
   {stop, term(), term()}.
 
-handle_call({query_vehicle_history, Vehicle_Uuid}, _From, Riak_PID) ->
+handle_call({get_vehicle_history, Vehicle_uuid}, _From, Riak_Pid) ->
   %{reply,<<bob,sue,alice>>,Riak_PID};
-  case riakc_pb_socket:get(Riak_PID, <<"vehicle">>, Vehicle_Uuid) of
+  case riakc_pb_socket:get(Riak_Pid, <<"vehicle">>, Vehicle_uuid) of
     {ok, Fetched} ->
       %reply with the value as a binary, not the key nor the bucket.
-      {reply, binary_to_term(riakc_obj:get_value(Fetched)), Riak_PID};
+      {reply, binary_to_term(riakc_obj:get_value(Fetched)), Riak_Pid};
     Error ->
-      {reply, Error, Riak_PID}
+      {reply, Error, Riak_Pid}
   end;
-
-handle_call(_Request, _From, State) ->
-  {reply, history, State};
 handle_call(stop, _From, _State) ->
   {stop, normal,
     replace_stopped,
@@ -177,18 +174,18 @@ code_change(_OldVsn, State, _Extra) ->
 query_vehicle_history_riak_test_() ->
   {setup,
     fun() ->
-      meck:new(riakc_obj, [non_strict]),
-      meck:new(riakc_pb_socket, [non_strict]),
-      meck:expect(riakc_obj, get_value, fun(_Key) -> <<"value">> end),
-      meck:expect(riakc_pb_socket, get, fun(riak_pid, <<"vehicle_bucket">>, <<"vehicle_uuid">>) -> {ok, history} end)
+      meck:new(riakc_obj),
+      meck:new(riakc_pb_socket),
+      meck:expect(riakc_obj, get_value, fun(_Key) -> term_to_binary("history") end),
+      meck:expect(riakc_pb_socket, get, fun(_Riak_Pid, _Bucket, _Key) -> {ok, riakc_obj} end)
     end,
     fun(_) ->
       meck:unload(riakc_obj),
       meck:unload(riakc_pb_socket)
     end,
     [
-      ?_assertMatch({reply, history, riak_pid}, query_vehicle_history_server:handle_call({get_vehicle_history, <<"vehicle_uuid">>}, from, riak_pid)),
-      ?_assertMatch({reply, history, riak_pid}, query_vehicle_history_server:handle_call({get_vehicle_history, <<"">>}, from, riak_pid))
+      ?_assertMatch({reply, "history", riak_pid}, query_vehicle_history_server:handle_call({get_vehicle_history, <<"vehicle_uuid">>}, from, riak_pid)),
+      ?_assertMatch({reply, "history", riak_pid}, query_vehicle_history_server:handle_call({get_vehicle_history, <<"">>}, from, riak_pid))
     ]
   }.
 -endif.

@@ -97,12 +97,12 @@ init([]) ->
   {noreply, term(), integer()} |
   {stop, term(), term(), integer()} | 
   {stop, term(), term()}.
-handle_call(_Request, _From, State) ->
-  {reply,replace_started,State};
 handle_call(stop, _From, _State) ->
   {stop,normal,
    replace_stopped,
-   down}. %% setting the server's internal state to down
+   down}; %% setting the server's internal state to down
+handle_call(_Request, _From, State) ->
+  {reply,replace_started,State}.
 
 %%--------------------------------------------------------------------
 %% @private
@@ -173,13 +173,11 @@ code_change(_OldVsn, State, _Extra) ->
 %%
 %% Unit tests go here. 
 %%
--record(location, {lat, long}).
-
 store_vehicle_mock_riak_test_() ->
   {setup,
    fun() -> 
-       meck:new(riakc_obj, [non_strict]),
-       meck:new(riakc_pb_socket, [non_strict]),
+       meck:new(riakc_obj),
+       meck:new(riakc_pb_socket),
        meck:expect(riakc_obj, new, fun(_Bucket, _Key, _Data) -> request end),
        meck:expect(riakc_pb_socket, put, fun(_Riak_pid, _Request) -> status end)
    end,
@@ -188,9 +186,9 @@ store_vehicle_mock_riak_test_() ->
        meck:unload(riakc_pb_socket)
    end,
    [
-    ?_assertMatch({noreply, riak_pid}, store_vehicle_info_server:handle_cast({store_vehicle, <<"vehicle_uuid">>, [#location{lat=43.813307, long=-111.781550}, -576460742739521957]}, riak_pid)),
+    ?_assertMatch({noreply, riak_pid}, store_vehicle_info_server:handle_cast({store_vehicle, <<"vehicle_uuid">>, [record]}, riak_pid)),
     ?_assertMatch({noreply, riak_pid}, store_vehicle_info_server:handle_cast({store_vehicle, <<"vehicle_uuid">>, []}, riak_pid)),
-    ?_assertMatch({noreply, riak_pid}, store_vehicle_info_server:handle_cast({store_vehicle, <<"">>, [#location{lat=43.813307, long=-111.781550}, -576460742739521957]}, riak_pid))
+    ?_assertMatch({noreply, riak_pid}, store_vehicle_info_server:handle_cast({store_vehicle, <<"">>, [record]}, riak_pid))
    ]
   }.
 -endif.

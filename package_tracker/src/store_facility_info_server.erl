@@ -96,12 +96,12 @@ init([]) ->
   {noreply, term(), integer()} |
   {stop, term(), term(), integer()} | 
   {stop, term(), term()}.
-handle_call(_Request, _From, State) ->
-  {reply,replace_started,State};
 handle_call(stop, _From, _State) ->
   {stop,normal,
    replace_stopped,
-   down}. %% setting the server's internal state to down
+   down}; %% setting the server's internal state to down
+handle_call(_Request, _From, State) ->
+  {reply,replace_started,State}.
 
 %%--------------------------------------------------------------------
 %% @private
