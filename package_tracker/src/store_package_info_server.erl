@@ -213,7 +213,7 @@ store_package_mock_riak_test_() ->
        meck:unload(riakc_obj),
        meck:unload(riakc_pb_socket)
    end,
-   [
+   [
     ?_assertMatch({noreply, riak_pid}, ?MODULE:handle_cast({store_package, <<"package_uuid">>, #{test=>2}}, riak_pid)),
     ?_assertMatch({noreply, riak_pid}, ?MODULE:handle_cast({store_package, <<"package_uuid">>, #{}}, riak_pid)),
     ?_assertMatch({noreply, riak_pid}, ?MODULE:handle_cast({store_package, <<"">>, #{}}, riak_pid))
