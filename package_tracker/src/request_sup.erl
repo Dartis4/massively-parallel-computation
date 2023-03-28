@@ -61,7 +61,7 @@ start(Supervisor_name,Registration_type,Start_info)->
 %%% Mandatory callback functions
 %%%===================================================================
 
-init(Start_info) ->
+init([]) ->
 
 %% A supervisor specification is a record with the following mappings.
 %%
