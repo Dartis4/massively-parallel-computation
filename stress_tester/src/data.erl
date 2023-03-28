@@ -61,8 +61,8 @@ build_switch(Vehicle_move_count,Facility,Vehicle,Package)->
 	[#{package_uuid=>list_to_binary(Package),holder_uuid=>list_to_binary(Vehicle),time_stamp=>time_in_millis()}]++
 	%move the vehicle 'Vehicle_move_count' number of times
 	[#{vehicle_uuid=>list_to_binary(Vehicle),location=>#{lat=>rand:uniform_real()*360,
-														long=>rand:uniform_real()*360,
-														time_stamp=>time_in_millis()}}
+														long=>rand:uniform_real()*360
+														},time_stamp=>time_in_millis()}
 														|| _ <- lists:seq(1,Vehicle_move_count)].
 %%
 %% If the queries below had been generalized into one that included no type information,
