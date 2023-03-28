@@ -85,7 +85,8 @@ stop() -> gen_server:call(?MODULE, stop).
 %%--------------------------------------------------------------------
 -spec init(term()) -> {ok, term()}|{ok, term(), number()}|ignore |{stop, term()}.
 init([]) ->
-  {ok,replace_up}.
+  riakc_pb_socket:start_link("database.dartis.dev", 8087).
+
 %%--------------------------------------------------------------------
 %% @private
 %% @doc
@@ -122,16 +123,16 @@ handle_cast({store_vehicle, Key, Value}, Riak_Pid) ->
     true ->
       {noreply, Riak_Pid};
     _ ->
-      History = query_vehicle_history_server:query_vehicle_history(#{"vehicle_uuid"=>Key}),
-      case History of
-        [] ->
-          Vehicle = riakc_obj:new(<<"vehicle">>, Key, [Value]),
+      case riakc_pb_socket:get(Riak_Pid, <<"vehicle">>, Key) of
+        {ok, Fetched} ->
+          History = binary_to_term(riakc_obj:get_value(Fetched)),
+          Vehicle = riakc_obj:new(<<"vehicle">>, Key, [Value|History]),
           _Status = riakc_pb_socket:put(Riak_Pid, Vehicle),
           {noreply, Riak_Pid};
         _ ->
-          Vehicle = riakc_obj:new(<<"vehicle">>, Key, [Value|History]),
+          Vehicle = riakc_obj:new(<<"vehicle">>, Key, [Value]),
           _Status = riakc_pb_socket:put(Riak_Pid, Vehicle),
-        {noreply, Riak_Pid}
+          {noreply, Riak_Pid}
       end
   end;
 handle_cast(_Msg, State) ->
@@ -180,7 +181,7 @@ code_change(_OldVsn, State, _Extra) ->
 
 
 store_vehicle_info(Data) ->
-  {Key, Rest} = maps:take("vehicle_uuid", Data),
+  {Key, Rest} = maps:take(<<"vehicle_uuid">>, Data),
   gen_server:cast(?SERVER, {store_vehicle, Key, Rest}).
 
 

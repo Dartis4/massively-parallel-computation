@@ -3,6 +3,7 @@
 -export([init/2]).
 
 init(Req0, Opts) ->
+  io:fwrite("Store Facility~n"),
   {ok, Data, _} = cowboy_req:read_body(Req0),
   Dict = jsx:decode(Data),
   Result = jsx:encode(store_facility_info_server:store_facility_info(Dict)),

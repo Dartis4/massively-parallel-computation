@@ -174,8 +174,7 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 
 query_package_history(Data) ->
-  gen_server:call(?SERVER, {get_package_history, maps:get("package_uuid", Data)}).
-
+  gen_server:call(?SERVER, {get_package_history, maps:get(<<"package_uuid">>, Data)}).
 
 -ifdef(EUNIT).
 %%
@@ -212,13 +211,5 @@ query_package_history_riak_test_() ->
     ?_assertMatch({reply, "history", riak_pid}, query_package_history_server:handle_call({get_package_history, <<"">>}, from, riak_pid))
    ]
   }.
-% query_riak_test_() ->
-%   {setup,
-%    fun() -> start() end,
-%    fun(_) -> stop() end, 
-%    [
-%     ?_assertMatch([], query_package_history(<<"P123">>))
-%    ]
-%   }.
 -endif.
 

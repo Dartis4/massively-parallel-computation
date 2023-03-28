@@ -1,6 +1,4 @@
-%% @author Lee Barney
-%% @copyright 2022 Lee Barney licensed under the <a>
-%%        rel="license"
+%% @author Lee Barney @copyright 2022 Lee Barney licensed under the <a> rel="license"
 %%        href="http://creativecommons.org/licenses/by/4.0/"
 %%        target="_blank">
 %%        Creative Commons Attribution 4.0 International License</a>
@@ -83,7 +81,8 @@ stop() -> gen_server:call(?MODULE, stop).
 %%--------------------------------------------------------------------
 -spec init(term()) -> {ok, term()}|{ok, term(), number()}|ignore |{stop, term()}.
 init([]) ->
-  {ok,replace_up}.
+  riakc_pb_socket:start_link("database.dartis.dev", 8087).
+
 %%--------------------------------------------------------------------
 %% @private
 %% @doc
@@ -169,7 +168,7 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 
 store_facility_info(Data) ->
-  {Key, Rest} = maps:take("facility_uuid", Data),
+  {Key, Rest} = maps:take(<<"facility_uuid">>, Data),
   gen_server:cast(?SERVER, {store_facility, Key, Rest}).
 
 

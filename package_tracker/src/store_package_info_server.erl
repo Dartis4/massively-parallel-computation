@@ -122,16 +122,16 @@ handle_cast({store_package, Key, Value}, Riak_Pid) ->
     true ->
       {noreply, Riak_Pid};
     _ ->
-      History = query_package_history_server:query_package_history(#{"package_uuid"=>Key}),
-      case History of
-        {error, _} ->
-          Package = riakc_obj:new(<<"package">>, Key, [Value]),
+      case riakc_pb_socket:get(Riak_Pid, <<"package">>, Key) of
+        {ok, Fetched} ->
+          History = binary_to_term(riakc_obj:get_value(Fetched)),
+          Package = riakc_obj:new(<<"package">>, Key, [Value|History]),
           _Status = riakc_pb_socket:put(Riak_Pid, Package),
           {noreply, Riak_Pid};
         _ ->
-          Package = riakc_obj:new(<<"package">>, Key, [Value|History]),
+          Package = riakc_obj:new(<<"package">>, Key, [Value]),
           _Status = riakc_pb_socket:put(Riak_Pid, Package),
-        {noreply, Riak_Pid}
+          {noreply, Riak_Pid}
       end
   end;
 handle_cast(_Msg, State) ->
@@ -179,7 +179,7 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 
 store_package_info(Data) ->
-  {Key, Rest} = maps:take("package_uuid", Data),
+  {Key, Rest} = maps:take(<<"package_uuid">>, Data),
   gen_server:cast(?SERVER, {store_package, Key, Rest}).
 
 -ifdef(EUNIT).
@@ -219,13 +219,5 @@ store_package_mock_riak_test_() ->
     ?_assertMatch({noreply, riak_pid}, ?MODULE:handle_cast({store_package, <<"">>, #{}}, riak_pid))
    ]
   }.
-% store_in_riak_test_() ->
-%   {setup,
-%    fun() -> start() end,
-%    fun(_) -> stop() end, 
-%    [
-%     ?_assertMatch(ok, store_package(<<"P123">>, []))
-%    ]
-%   }.
 -endif.
 

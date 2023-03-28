@@ -82,7 +82,13 @@ stop() -> gen_server:call(?MODULE, stop).
 %%--------------------------------------------------------------------
 -spec init(term()) -> {ok, term()}|{ok, term(), number()}|ignore |{stop, term()}.
 init([]) ->
-  {ok, replace_up}.
+  case riakc_pb_socket:start_link("database.dartis.dev", 8087) of
+    {ok,Riak_pid} -> 
+      {ok,Riak_pid};
+    _ ->
+      {stop,link_failure}
+  end.
+
 %%--------------------------------------------------------------------
 %% @private
 %% @doc
@@ -167,8 +173,7 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 
 query_vehicle_history(Data) ->
-  gen_server:call(?SERVER, {get_vehicle_history, maps:get("vehicle_uuid", Data)}).
-
+  gen_server:call(?SERVER, {get_vehicle_history, maps:get(<<"vehicle_uuid">>, Data)}).
 
 -ifdef(EUNIT).
 %%
