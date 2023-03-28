@@ -25,7 +25,7 @@
 %% 
 -export([init/1]).
 %% event Callbacks
--export([start/1,start/3]).
+-export([start_link/0,start_link/2]).
 
 %%%===================================================================
 %%% Public API functions
@@ -40,8 +40,8 @@
 %%
 %% @end
 %%--------------------------------------------------------------------
-start(Start_info)->
-    supervisor:start_link({local,?MODULE},?MODULE,Start_info).
+start_link()->
+    supervisor:start_link({local,?MODULE},?MODULE,[]).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -53,8 +53,8 @@ start(Start_info)->
 %%
 %% @end
 %%--------------------------------------------------------------------
-start(Supervisor_name,Registration_type,Start_info)->
-    supervisor:start_link({Registration_type,Supervisor_name},?MODULE,Start_info).
+start_link(Supervisor_name,Registration_type)->
+    supervisor:start_link({Registration_type,Supervisor_name},?MODULE,[]).
 
 
 %%%===================================================================
@@ -83,9 +83,17 @@ init([]) ->
     %% followed by the list of child specifications.
     %%
   SupFlags = #{strategy => one_for_all,
-    intensity => 5,
+    intensity =>0,
     period => 1},
-  ChildSpecs = [generate_spec(store_package_info_server, worker), generate_spec(query_package_history_server, worker)],
+  ChildSpecs = [
+                generate_spec(store_package_info_server, worker),
+                generate_spec(query_package_history_server, worker),
+                generate_spec(store_vehicle_info_server, worker),
+                generate_spec(query_vehicle_history_server, worker),
+                generate_spec(store_facility_info_server, worker),
+                generate_spec(query_facility_server, worker)
+               ],
+  
   {ok, {SupFlags, ChildSpecs}}.
 
 %%%===================================================================
@@ -108,7 +116,7 @@ generate_spec(Module,Type)->
 %%                                                  % gen_event manager with some unknown types of gen_event handler
 %%                                                  % modules to be added later.  
         #{id => Module,
-          start => {Module,start_link,[]},
+          start => {Module,start,[]},
           restart => permanent,
           shutdown => 2000,
           type => Type,

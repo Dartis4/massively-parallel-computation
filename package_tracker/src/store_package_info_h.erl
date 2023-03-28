@@ -4,8 +4,8 @@
 
 init(Req0, Opts) ->
   {ok, Data, _} = cowboy_req:read_body(Req0),
-  [Item|_] = jsx:decode(Data),
-  Result = jsx:encode(store_package_info_server:store_package_info(Item)),
+  Dict = jsx:decode(Data),
+  Result = jsx:encode(store_package_info_server:store_package_info(Dict)),
   Req = cowboy_req:reply(200, #{
       <<"content-type">> => <<"text/json">>
      }, Result, Req0),

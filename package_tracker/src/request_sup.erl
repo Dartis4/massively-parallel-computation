@@ -82,7 +82,18 @@ init([]) ->
     %% consisting of ok and a tuple that is the supervisor specifiation list 
     %% followed by the list of child specifications.
     %%
-    {ok,{}}.
+  SupFlags = #{strategy => one_for_all,
+    intensity => 0,
+    period => 1},
+  ChildSpecs = [
+                generate_spec(store_package_info_h, worker), 
+                generate_spec(query_package_history_h, worker),
+                generate_spec(store_vehicle_info_h, worker),
+                generate_spec(query_vehicle_history_h, worker),
+                generate_spec(store_facility_info_h, worker),
+                generate_spec(query_vehicle_history_h, worker)
+               ],
+  {ok, {SupFlags, ChildSpecs}}.
 
 %%%===================================================================
 %%% Internal functions

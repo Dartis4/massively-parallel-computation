@@ -18,6 +18,7 @@
 -include_lib("eunit/include/eunit.hrl").
 -endif.
 
+
 %% API
 -export([start/0,start/3,stop/0]).
 
@@ -25,6 +26,7 @@
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
          terminate/2, code_change/3]).
 
+-export([store_facility_info/1]).
 
 %%%===================================================================
 %%% API
@@ -166,6 +168,9 @@ code_change(_OldVsn, State, _Extra) ->
 %%% Internal functions
 %%%===================================================================
 
+store_facility_info(Data) ->
+  {Key, Rest} = maps:take("facility_uuid", Data),
+  gen_server:cast(?SERVER, {store_facility, Key, Rest}).
 
 
 -ifdef(EUNIT).
@@ -175,8 +180,8 @@ code_change(_OldVsn, State, _Extra) ->
 store_facility_mock_riak_test_() ->
   {setup,
    fun() -> 
-       meck:new(riakc_obj, [non_strict]),
-       meck:new(riakc_pb_socket, [non_strict]),
+       meck:new(riakc_obj),
+       meck:new(riakc_pb_socket),
        meck:expect(riakc_obj, new, fun(_Key, _Uuid, _Data) -> request end),
        meck:expect(riakc_pb_socket, put, fun(_Riak_pid, _Request) -> status end)
    end,
@@ -185,9 +190,9 @@ store_facility_mock_riak_test_() ->
        meck:unload(riakc_pb_socket)
    end,
    [
-    ?_assertMatch({noreply, riak_pid}, store_facility_info_server:handle_cast({store_facility, <<"facility_uuid">>, ["Rexburg"]}, riak_pid)),
-    ?_assertMatch({noreply, riak_pid}, store_facility_info_server:handle_cast({store_facility, <<"facility_uuid">>, []}, riak_pid)),
-    ?_assertMatch({noreply, riak_pid}, store_facility_info_server:handle_cast({store_facility, <<"">>, []}, riak_pid))
+    ?_assertMatch({noreply, riak_pid}, store_facility_info_server:handle_cast({store_facility, <<"facility_uuid">>, #{"city"=>"Rexburg"}}, riak_pid)),
+    ?_assertMatch({noreply, riak_pid}, store_facility_info_server:handle_cast({store_facility, <<"facility_uuid">>, #{}}, riak_pid)),
+    ?_assertMatch({noreply, riak_pid}, store_facility_info_server:handle_cast({store_facility, <<"">>, #{}}, riak_pid))
    ]
   }.
 -endif.

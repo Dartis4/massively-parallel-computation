@@ -173,8 +173,8 @@ code_change(_OldVsn, State, _Extra) ->
 %%% Internal functions
 %%%===================================================================
 
-query_package_history(Package_uuid) ->
-  gen_server:call(?SERVER, {get_package_history, Package_uuid}).
+query_package_history(Data) ->
+  gen_server:call(?SERVER, {get_package_history, maps:get("package_uuid", Data)}).
 
 
 -ifdef(EUNIT).

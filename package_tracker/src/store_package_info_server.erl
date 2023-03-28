@@ -18,6 +18,7 @@
 -include_lib("eunit/include/eunit.hrl").
 -endif.
 
+
 %% API
 -export([start/0,start/3,stop/0]).
 
@@ -25,8 +26,7 @@
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
          terminate/2, code_change/3]).
 
--export([store_package/2]).
-
+-export([store_package_info/1]).
 
 %%%===================================================================
 %%% API
@@ -122,9 +122,17 @@ handle_cast({store_package, Key, Value}, Riak_Pid) ->
     true ->
       {noreply, Riak_Pid};
     _ ->
-      Package = riakc_obj:new(<<"package">>, Key, Value),
-      _Status = riakc_pb_socket:put(Riak_Pid, Package),
-      {noreply, Riak_Pid}
+      History = query_package_history_server:query_package_history(#{"package_uuid"=>Key}),
+      case History of
+        {error, _} ->
+          Package = riakc_obj:new(<<"package">>, Key, [Value]),
+          _Status = riakc_pb_socket:put(Riak_Pid, Package),
+          {noreply, Riak_Pid};
+        _ ->
+          Package = riakc_obj:new(<<"package">>, Key, [Value|History]),
+          _Status = riakc_pb_socket:put(Riak_Pid, Package),
+        {noreply, Riak_Pid}
+      end
   end;
 handle_cast(_Msg, State) ->
   {noreply, State}.
@@ -170,9 +178,9 @@ code_change(_OldVsn, State, _Extra) ->
 %%% Internal functions
 %%%===================================================================
 
-store_package(Package_uuid, Holders) ->
-  gen_server:cast(?SERVER, {store_package, Package_uuid, Holders}).
-
+store_package_info(Data) ->
+  {Key, Rest} = maps:take("package_uuid", Data),
+  gen_server:cast(?SERVER, {store_package, Key, Rest}).
 
 -ifdef(EUNIT).
 %%
@@ -198,16 +206,17 @@ store_package_mock_riak_test_() ->
        meck:new(riakc_obj),
        meck:new(riakc_pb_socket),
        meck:expect(riakc_obj, new, fun(_Bucket, _Key, _Data) -> request end),
-       meck:expect(riakc_pb_socket, put, fun(_Riak_pid, _Request) -> status end)
+       meck:expect(riakc_pb_socket, put, fun(_Riak_pid, _Request) -> status end),
+       meck:expect(query_package_history_server, query_package_history, fun(_Record) -> [#{test=>1}] end)
    end,
    fun(_) -> 
        meck:unload(riakc_obj),
        meck:unload(riakc_pb_socket)
    end,
-   [
-    ?_assertMatch({noreply, riak_pid}, ?MODULE:handle_cast({store_package, <<"package_uuid">>, [<<"holder_uuid">>]}, riak_pid)),
-    ?_assertMatch({noreply, riak_pid}, ?MODULE:handle_cast({store_package, <<"package_uuid">>, []}, riak_pid)),
-    ?_assertMatch({noreply, riak_pid}, ?MODULE:handle_cast({store_package, <<"">>, []}, riak_pid))
+   [
+    ?_assertMatch({noreply, riak_pid}, ?MODULE:handle_cast({store_package, <<"package_uuid">>, #{test=>2}}, riak_pid)),
+    ?_assertMatch({noreply, riak_pid}, ?MODULE:handle_cast({store_package, <<"package_uuid">>, #{}}, riak_pid)),
+    ?_assertMatch({noreply, riak_pid}, ?MODULE:handle_cast({store_package, <<"">>, #{}}, riak_pid))
    ]
   }.
 % store_in_riak_test_() ->

@@ -25,6 +25,9 @@
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
          terminate/2, code_change/3]).
 
+-export([store_vehicle_info/1]).
+
+
 % -record(location, {lat, long}).
 
 %%%===================================================================
@@ -119,9 +122,17 @@ handle_cast({store_vehicle, Key, Value}, Riak_Pid) ->
     true ->
       {noreply, Riak_Pid};
     _ ->
-      Vehicle = riakc_obj:new(<<"vehicle">>, Key, Value),
-      _Status = riakc_pb_socket:put(Riak_Pid, Vehicle),
-      {noreply, Riak_Pid}
+      History = query_vehicle_history_server:query_vehicle_history(#{"vehicle_uuid"=>Key}),
+      case History of
+        [] ->
+          Vehicle = riakc_obj:new(<<"vehicle">>, Key, [Value]),
+          _Status = riakc_pb_socket:put(Riak_Pid, Vehicle),
+          {noreply, Riak_Pid};
+        _ ->
+          Vehicle = riakc_obj:new(<<"vehicle">>, Key, [Value|History]),
+          _Status = riakc_pb_socket:put(Riak_Pid, Vehicle),
+        {noreply, Riak_Pid}
+      end
   end;
 handle_cast(_Msg, State) ->
   {noreply, State}.
@@ -168,6 +179,10 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 
 
+store_vehicle_info(Data) ->
+  {Key, Rest} = maps:take("vehicle_uuid", Data),
+  gen_server:cast(?SERVER, {store_vehicle, Key, Rest}).
+
 
 -ifdef(EUNIT).
 %%
@@ -178,17 +193,19 @@ store_vehicle_mock_riak_test_() ->
    fun() -> 
        meck:new(riakc_obj),
        meck:new(riakc_pb_socket),
+       meck:new(query_vehicle_history_server),
        meck:expect(riakc_obj, new, fun(_Bucket, _Key, _Data) -> request end),
-       meck:expect(riakc_pb_socket, put, fun(_Riak_pid, _Request) -> status end)
+       meck:expect(riakc_pb_socket, put, fun(_Riak_pid, _Request) -> status end),
+       meck:expect(query_vehicle_history_server, query_vehicle_history, fun(_Record) -> [#{test=>1}] end)
    end,
    fun(_) -> 
        meck:unload(riakc_obj),
        meck:unload(riakc_pb_socket)
    end,
    [
-    ?_assertMatch({noreply, riak_pid}, store_vehicle_info_server:handle_cast({store_vehicle, <<"vehicle_uuid">>, [record]}, riak_pid)),
-    ?_assertMatch({noreply, riak_pid}, store_vehicle_info_server:handle_cast({store_vehicle, <<"vehicle_uuid">>, []}, riak_pid)),
-    ?_assertMatch({noreply, riak_pid}, store_vehicle_info_server:handle_cast({store_vehicle, <<"">>, [record]}, riak_pid))
+    ?_assertMatch({noreply, riak_pid}, store_vehicle_info_server:handle_cast({store_vehicle, <<"vehicle_uuid">>, #{test=>2}}, riak_pid)),
+    ?_assertMatch({noreply, riak_pid}, store_vehicle_info_server:handle_cast({store_vehicle, <<"vehicle_uuid">>, #{}}, riak_pid)),
+    ?_assertMatch({noreply, riak_pid}, store_vehicle_info_server:handle_cast({store_vehicle, <<"">>, #{}}, riak_pid))
    ]
   }.
 -endif.
