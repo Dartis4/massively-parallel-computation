@@ -55,6 +55,8 @@ spawn_package_history_changes([Change|T],Http_info)->
 
 
 send(Body,{Method,URL,Header,Type,HTTPOptions,Options},URL_extension)->
+    % erlang:display_string("Sending request~n"),
+    % erlang:display(Body),
     httpc:request(Method, {string:concat(URL,URL_extension), Header, Type, jsx:encode(Body)}, HTTPOptions, Options).
 
 
