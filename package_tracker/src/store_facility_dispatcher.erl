@@ -1,4 +1,4 @@
--module(dispatcher).
+-module(store_package_dispatcher).
 -behaviour(gen_statem).
 
 -define(SERVER, ?MODULE).
