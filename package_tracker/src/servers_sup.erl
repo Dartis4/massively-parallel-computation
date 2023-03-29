@@ -86,12 +86,12 @@ init([]) ->
     intensity =>0,
     period => 1},
   ChildSpecs = [
-                generate_spec(store_package_info_server, worker),
-                generate_spec(query_package_history_server, worker),
-                generate_spec(store_vehicle_info_server, worker),
-                generate_spec(query_vehicle_history_server, worker),
-                generate_spec(store_facility_info_server, worker),
-                generate_spec(query_facility_server, worker)
+                generate_spec(store_package_sup, supervisor),
+                generate_spec(store_vehicle_sup, supervisor),
+                generate_spec(store_facility_sup, supervisor),
+                generate_spec(query_package_sup, supervisor),
+                generate_spec(query_vehicle_sup, supervisor),
+                generate_spec(query_facility_sup, supervisor)
                ],
   
   {ok, {SupFlags, ChildSpecs}}.
