@@ -1,0 +1,14 @@
++scl false
++sfwi 500
++P 400000
++e 400000
+-env ERL_FULLSWEEP_AFTER 0
++Q 262144
++A 1024
+-setcookie package_tracker_cookie
+-sname package_tracker
++K true
++W w
+-smp enable
++Bi true
++zdbbl 32768

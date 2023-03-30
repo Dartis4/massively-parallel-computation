@@ -1,29 +1,4 @@
-%%%-------------------------------------------------------------------
-%%% @author Lee Barney  <barney.cit@gmail.com>
-%%% @copyright © 2022, Lee S. Barney
-%%% @reference Licensed under the 
-%%% <a href="http://creativecommons.org/licenses/by/4.0/">
-%%% Creative Commons Attribution 4.0 International License</a>.
-%%%
-%%% @doc
-%%% This is a round robin balancer. Given a set of module-id pairs, this balancer
-%%% will distribute work in a  
-%%% <a href="https://www.techtarget.com/whatis/definition/round-robin">
-%%% round-robin</a> fashion.
-%%%
-%%% To use this round robin balancer, the balanced worker item must have a
-%%% locally or globally registered name. The registered name is used 
-%%% to add the item to a balancer.
-%%%
-%%%
-%%%
-%%% Be aware that a worker item can, via its ID, be added to more than 
-%%% one rr_balancer. This is by design, not by accident. 
-%%% @end
-
-%%% Created : 24 June 2022 by Lee Barney <barney.cit@gmail.com>
-%%%-------------------------------------------------------------------
--module(dispatcher).
+-module(query_vehicle_dispatcher).
 -behaviour(gen_statem).
 
 %% Only include the eunit testing library
@@ -34,7 +9,7 @@
 -endif.
 
 %% API
--export([start/2,start_link/2,stop/1]).
+-export([start/2,start_link/1,start_link/2,stop/1]).
 
 %% Supervisor Callbacks
 -export([terminate/3,code_change/4,init/1,callback_mode/0]).
@@ -56,6 +31,8 @@
 %% @end
 %%--------------------------------------------------------------------
 -spec start(atom(),term()) -> {ok, atom()}.
+
+
 start(Statem_name,Workers) ->
     gen_statem:start({local,Statem_name},?MODULE,Workers,[]).
 
@@ -67,10 +44,14 @@ start(Statem_name,Workers) ->
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec start_link(atom(),term()) -> {ok, atom()}.
-start_link(Statem_name,Workers) ->
-    gen_statem:start_link({local,Statem_name},?MODULE,Workers,[]).
+-spec start_link(term()) -> {ok, atom()}.
 
+
+start_link(Workers) ->
+    gen_statem:start_link({local,?MODULE},?MODULE,Workers,[]).
+
+start_link(Name, Workers) ->
+    gen_statem:start_link({local,Name},?MODULE,Workers,[]).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -111,11 +92,17 @@ iterate_worker(Bal_id) ->
 %% @private
 -spec handle_event({call, From::pid()}, EventContent::term(), State::term(), Data::term()) ->
         {next_state,NewState::term(),Data::term(),[{reply,From::pid(),Data::term()}]}.
+
+
 handle_event({call,From},blib,ready,[Registered_name|T]) ->
     %Modify the state data and replace State_data below with the modified state data.
     {next_state,ready,T++[Registered_name],[{reply,From,Registered_name}]};
-handle_event({call, From},Command,_State,_Worker_ids) ->
-  {next_state,fail,_Worker_ids,[{reply,From,{error,?MODULE,From,Command}}]}.
+
+% handle_event({call, From},Command,_State, Worker_ids) ->
+%   {next_state,fail, Worker_ids,[{reply,From,{error,?MODULE,Command}}]};
+
+handle_event({call, From},Command, _State, Worker_ids) ->
+  {next_state,fail, Worker_ids,[{reply,From,{error,?MODULE,From,Command}}]}.
 
 %% This code is included in the compiled code only if 
 %% 'rebar3 eunit' is being executed.
@@ -123,23 +110,22 @@ handle_event({call, From},Command,_State,_Worker_ids) ->
 %%
 %% Unit tests go here. 
 %%
-start_test() ->
+start_test_() ->
   {setup,
   fun() -> donothing end,
-  fun() -> gen_statem:stop(start_tester) end,
-  [?assertMatch({ok, _}, gen_statem:start_link({local,start_tester},?MODULE,[],[]))]}.
+  fun(_) -> gen_statem:stop(start_tester) end,
+  [?_assertMatch({ok, _}, gen_statem:start_link({local,start_tester},?MODULE,[],[]))]}.
 
-start_with_ids_test() ->
+start_with_ids_test_() ->
   {setup,
   fun() -> donothing end,
-  fun() -> gen_statem:stop(start_ids_tester) end,
-  [?assertMatch({ok, _}, start_link(start_ids_tester,[worker1,worker2,worker3]))]}.
+  fun(_) -> gen_statem:stop(start_ids_tester) end,
+  [?_assertMatch({ok, _}, start_link(start_ids_tester,[worker1,worker2,worker3]))]}.
 
-get_next_worker_test() ->
+get_next_worker_test_() ->
   {setup,
   fun() -> donothing end,
-  fun() -> stop(next_worker) end,
-  [?assertMatch({ok, _}, start_link(next_worker,[worker1,worker2,worker3])),
-   ?assertEqual(worker1, iterate_worker(next_worker))]}.
-
+  fun(_) -> stop(next_worker) end,
+  [?_assertMatch({ok, _}, start_link(next_worker,[worker1,worker2,worker3])),
+   ?_assertEqual(worker1, iterate_worker(next_worker))]}.
 -endif.
