@@ -48,7 +48,8 @@ build_package_history_adds(Package_count,Domain,Tester_name,Package_id_accum,
 	Facility_vehicle_pairs = [{generate_UUID(Domain,Tester_name),generate_UUID(Domain,Tester_name)} 
 								|| _ <- lists:seq(1,10)],
 	%merge all of the switch lists into one list
-	Changes = lists:merge([data:build_switch(76,F,V,Package) || {F,V} <- Facility_vehicle_pairs]),
+  % 76 highest request
+	Changes = lists:merge([data:build_switch(75,F,V,Package) || {F,V} <- Facility_vehicle_pairs]),
 	{Facilities,Vehicles} = lists:unzip(Facility_vehicle_pairs),
 	build_package_history_adds(Package_count-1,Domain,Tester_name,
 		[Package]++Package_id_accum,Facilities++Facility_id_accum,Vehicles++Vehicle_id_accum,History_accum++Changes).

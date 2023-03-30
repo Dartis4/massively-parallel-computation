@@ -1,0 +1,14 @@
++scl false
++sfwi 500
++P 256000
++e 256000
+-env ERL_FULLSWEEP_AFTER 0
++Q 262144
++A 1024
+-setcookie stress_tester_cookie
+-sname stress_tester
++K true
++W w
+-smp enable
++Bi true
++zdbbl 32768
