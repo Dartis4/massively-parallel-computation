@@ -1,9 +1,9 @@
 %%%-------------------------------------------------------------------
-%% @doc robot_arm_sm top level supervisor.
+%% @doc data_handler top level supervisor.
 %% @end
 %%%-------------------------------------------------------------------
 
--module(robot_arm_sm_sup).
+-module(data_handler_sup).
 
 -behaviour(supervisor).
 
@@ -14,7 +14,9 @@
 -define(SERVER, ?MODULE).
 
 start_link() ->
-    supervisor:start_link({local, ?SERVER}, ?MODULE, []).
+  Res = supervisor:start_link({local, ?SERVER}, ?MODULE, []),
+  ok = gen_event:add_handler(my_event, my_event_handler, []),
+  Res.
 
 %% sup_flags() = #{strategy => strategy(),         % optional
 %%                 intensity => non_neg_integer(), % optional
@@ -26,25 +28,18 @@ start_link() ->
 %%                  type => worker(),       % optional
 %%                  modules => modules()}   % optional
 init([]) ->
-    SupFlags = #{strategy => one_for_all,
-                 intensity => 0,
-                 period => 1},
-    ChildSpecs = [],
-    {ok, {SupFlags, ChildSpecs}}.
+  Manager_event = #{id => my_event,
+    start => {gen_event, start_link, [{local, my_event}]},
+    restart => permanent,
+    shutdown => 5000,
+    type => worker,
+    modules => [dynamic]},
+
+  SupFlags = #{strategy => one_for_all,
+    intensity => 0,
+    period => 1},
+
+  ChildSpecs = [Manager_event],
+  {ok, {SupFlags, ChildSpecs}}.
 
 %% internal functions
-% generate_spec(Module,Name,Type)->
-%   #{id => Name,
-%     start => {Module, start, [local, Name, [math1]]},
-%     restart => permanent,
-%     shutdown => 2000,
-%     type => Type,
-%     modules => [Module]}.
-
-% generate_spec(Module,Name,Type,Data)->
-%   #{id => Name,
-%     start => {Module, start, [local, Name, Data]},
-%     restart => permanent,
-%     shutdown => 2000,
-%     type => Type,
-%     modules => [Module]}.
