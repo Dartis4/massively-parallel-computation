@@ -6,7 +6,8 @@ init(Req0, Opts) ->
   io:fwrite("Query Facility~n"),
   {ok, Data, _} = cowboy_req:read_body(Req0),
   Dict = jsx:decode(Data),
-  case query_facility_server:query_facility(Dict) of
+  Worker = query_facility_dispatcher:iterate_worker(query_facility_dispatcher),
+  case query_facility_server:query_facility(Worker, Dict) of
     {error, _} ->
       Req = cowboy_req:reply(200, #{
           <<"content-type">> => <<"text/json">>

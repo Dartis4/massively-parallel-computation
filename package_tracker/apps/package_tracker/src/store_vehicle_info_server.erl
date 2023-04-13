@@ -19,13 +19,13 @@
 -endif.
 
 %% API
--export([start/0,start/3,stop/0]).
+-export([start/0,start/1,stop/0]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
          terminate/2, code_change/3]).
 
--export([store_vehicle_info/1]).
+-export([store_vehicle_info/1,store_vehicle_info/2]).
 
 
 % -record(location, {lat, long}).
@@ -56,9 +56,9 @@ start() ->
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec start(atom(),atom(),atom()) -> {ok, pid()} | ignore | {error, term()}.
-start(Registration_type,Name,Args) ->
-  gen_server:start_link({Registration_type, Name}, ?MODULE, Args, []).
+-spec start(atom()) -> {ok, pid()} | ignore | {error, term()}.
+start(Name) ->
+  gen_server:start_link({local, Name}, ?MODULE, [], []).
 
 
 %%--------------------------------------------------------------------
@@ -179,16 +179,32 @@ code_change(_OldVsn, State, _Extra) ->
 %%% Internal functions
 %%%===================================================================
 
-
 store_vehicle_info(Data) ->
   {Key, Rest} = maps:take(<<"vehicle_uuid">>, Data),
   gen_server:cast(?SERVER, {store_vehicle, Key, Rest}).
 
+store_vehicle_info(Name, Data) ->
+  {Key, Rest} = maps:take(<<"vehicle_uuid">>, Data),
+  gen_server:cast(Name, {store_vehicle, Key, Rest}).
 
 -ifdef(EUNIT).
 %%
 %% Unit tests go here. 
 %%
+server_start_test_()->
+  {setup,
+   fun()-> 
+       meck:new(riakc_pb_socket), 
+       meck:expect(riakc_pb_socket, start_link, fun(_Domain, _Port) -> {ok, riak_pid} end)
+   end,
+   fun(_)-> 
+       gen_server:stop(?SERVER),
+       meck:unload(riakc_pb_socket)
+   end,
+   [
+    ?_assertMatch({ok, _}, start())
+   ]
+  }.
 store_vehicle_mock_riak_test_() ->
   {setup,
    fun() -> 
@@ -197,7 +213,8 @@ store_vehicle_mock_riak_test_() ->
        meck:new(query_vehicle_history_server),
        meck:expect(riakc_obj, new, fun(_Bucket, _Key, _Data) -> request end),
        meck:expect(riakc_pb_socket, put, fun(_Riak_pid, _Request) -> status end),
-       meck:expect(query_vehicle_history_server, query_vehicle_history, fun(_Record) -> [#{test=>1}] end)
+       meck:expect(riakc_pb_socket, get, fun(_Riak_Pid, _Bucket, _Key) -> {ok, riakc_obj} end),
+       meck:expect(riakc_obj, get_value, fun(_Key) -> term_to_binary("history") end)
    end,
    fun(_) -> 
        meck:unload(riakc_obj),

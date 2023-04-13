@@ -10,6 +10,7 @@
 -export([start/2, stop/1]).
 
 start(_StartType, _StartArgs) ->
+  io:fwrite("App Started~n"),
   Dispatch = cowboy_router:compile([ 
     {'_', [ 
       {"/", toppage_h, []},

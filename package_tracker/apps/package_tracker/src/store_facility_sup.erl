@@ -14,7 +14,7 @@
 
 %%% Created : 24 October 2022 by Lee Barney <barney.cit@gmail.com>
 %%%-------------------------------------------------------------------
--module(servers_sup).
+-module(store_facility_sup).
 -behaviour(supervisor).
 
 %%%===================================================================
@@ -82,18 +82,14 @@ init([]) ->
     %% consisting of ok and a tuple that is the supervisor specifiation list 
     %% followed by the list of child specifications.
     %%
-  SupFlags = #{strategy => one_for_all,
-    intensity =>0,
-    period => 1},
-  ChildSpecs = [
-                generate_spec(store_package_info_server, worker),
-                generate_spec(query_package_history_server, worker),
-                generate_spec(store_vehicle_info_server, worker),
-                generate_spec(query_vehicle_history_server, worker),
-                generate_spec(store_facility_info_server, worker),
-                generate_spec(query_facility_server, worker)
-               ],
-  
+  Names = [store_facility_server1, store_facility_server2, store_facility_server3, store_facility_server4, store_facility_server5],
+
+  Dispatcher_spec = generate_spec(store_facility_dispatcher, store_facility_dispatcher, worker, Names),
+  Server_spec = generate_spec(store_facility_server_sup, store_facility_server_sup, supervisor, Names),
+
+  SupFlags = #{strategy => one_for_all, intensity =>1, period => 5}, 
+
+  ChildSpecs = [Dispatcher_spec, Server_spec],
   {ok, {SupFlags, ChildSpecs}}.
 
 %%%===================================================================
@@ -101,7 +97,7 @@ init([]) ->
 %%%===================================================================
 
 %%@private
-generate_spec(Module,Type)->
+% generate_spec(Module,Type)->
 %%
 %% A child Specification is a record with the following mappings.
 %%
@@ -115,10 +111,18 @@ generate_spec(Module,Type)->
 %%                                                  % such a list is unknown, for example when the child is a 
 %%                                                  % gen_event manager with some unknown types of gen_event handler
 %%                                                  % modules to be added later.  
-        #{id => Module,
-          start => {Module,start,[]},
-          restart => permanent,
-          shutdown => 2000,
-          type => Type,
-          modules => [Module]}.
+        % #{id => Module,
+        %   start => {Module,start,[]},
+        %   restart => permanent,
+        %   shutdown => 2000,
+        %   type => Type,
+        %   modules => [Module]}.
 
+%%@private
+generate_spec(Module,Name,Type,Data)->
+  #{id => Name,
+    start => {Module, start_link, [Data]},
+    restart => permanent,
+    shutdown => 2000,
+    type => Type,
+    modules => [Module]}.

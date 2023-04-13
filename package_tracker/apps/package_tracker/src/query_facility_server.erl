@@ -6,7 +6,7 @@
 %%        Creative Commons Attribution 4.0 International License</a>
 %%
 %%
--module(query_vehicle_history_server).
+-module(query_facility_server).
 -behaviour(gen_server).
 
 -define(SERVER, ?MODULE).
@@ -19,13 +19,13 @@
 -endif.
 
 %% API
--export([start/0, start/3, stop/0]).
+-export([start/0, start/1, stop/0]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
   terminate/2, code_change/3]).
 
--export([query_vehicle_history/1]).
+-export([query_facility/1,query_facility/2]).
 
 %%%===================================================================
 %%% API
@@ -53,9 +53,9 @@ start() ->
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec start(atom(), atom(), atom()) -> {ok, pid()} | ignore | {error, term()}.
-start(Registration_type, Name, Args) ->
-  gen_server:start_link({Registration_type, Name}, ?MODULE, Args, []).
+-spec start(atom()) -> {ok, pid()} | ignore | {error, term()}.
+start(Name) ->
+  gen_server:start_link({local, Name}, ?MODULE, [], []).
 
 
 %%--------------------------------------------------------------------
@@ -104,9 +104,9 @@ init([]) ->
   {stop, term(), term(), integer()} |
   {stop, term(), term()}.
 
-handle_call({get_vehicle_history, Vehicle_uuid}, _From, Riak_Pid) ->
+handle_call({get_facility, Facility_uuid}, _From, Riak_Pid) ->
   %{reply,<<bob,sue,alice>>,Riak_PID};
-  case riakc_pb_socket:get(Riak_Pid, <<"vehicle">>, Vehicle_uuid) of
+  case riakc_pb_socket:get(Riak_Pid, <<"facility">>, Facility_uuid) of
     {ok, Fetched} ->
       %reply with the value as a binary, not the key nor the bucket.
       {reply, binary_to_term(riakc_obj:get_value(Fetched)), Riak_Pid};
@@ -172,14 +172,32 @@ code_change(_OldVsn, State, _Extra) ->
 %%% Internal functions
 %%%===================================================================
 
-query_vehicle_history(Data) ->
-  gen_server:call(?SERVER, {get_vehicle_history, maps:get(<<"vehicle_uuid">>, Data)}).
+query_facility(Data) -> 
+  gen_server:call(?SERVER, {get_facility, maps:get(<<"facility_uuid">>, Data)}).
+
+query_facility(Name, Data) -> 
+  gen_server:call(Name, {get_facility, maps:get(<<"facility_uuid">>, Data)}).
+
 
 -ifdef(EUNIT).
 %%
 %% Unit tests go here. 
 %%
-query_vehicle_history_riak_test_() ->
+server_start_test_()->
+  {setup,
+   fun()-> 
+       meck:new(riakc_pb_socket), 
+       meck:expect(riakc_pb_socket, start_link, fun(_Domain, _Port) -> {ok, riak_pid} end)
+   end,
+   fun(_)-> 
+       gen_server:stop(?SERVER),
+       meck:unload(riakc_pb_socket)
+   end,
+   [
+    ?_assertMatch({ok, _}, start())
+   ]
+  }.
+query_facility_riak_test_() ->
   {setup,
     fun() ->
       meck:new(riakc_obj),
@@ -192,8 +210,8 @@ query_vehicle_history_riak_test_() ->
       meck:unload(riakc_pb_socket)
     end,
     [
-      ?_assertMatch({reply, "history", riak_pid}, query_vehicle_history_server:handle_call({get_vehicle_history, <<"vehicle_uuid">>}, from, riak_pid)),
-      ?_assertMatch({reply, "history", riak_pid}, query_vehicle_history_server:handle_call({get_vehicle_history, <<"">>}, from, riak_pid))
+      ?_assertMatch({reply, "history", riak_pid}, query_facility_server:handle_call({get_facility, <<"facility_uuid">>}, from, riak_pid)),
+      ?_assertMatch({reply, "history", riak_pid}, query_facility_server:handle_call({get_facility, <<"">>}, from, riak_pid))
     ]
   }.
 -endif.

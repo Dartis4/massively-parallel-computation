@@ -49,7 +49,11 @@ build_package_history_adds(Package_count,Domain,Tester_name,Package_id_accum,
 								|| _ <- lists:seq(1,10)],
 	%merge all of the switch lists into one list
   % 76 highest request
+<<<<<<< HEAD:stress_tester/src/data.erl
 	Changes = lists:merge([data:build_switch(50,F,V,Package) || {F,V} <- Facility_vehicle_pairs]),
+=======
+	Changes = lists:merge([data:build_switch(75,F,V,Package) || {F,V} <- Facility_vehicle_pairs]),
+>>>>>>> ac9ea7fa013367349ad7ca80f97b91c74252cdf9:stress_tester/apps/stress_tester/src/data.erl
 	{Facilities,Vehicles} = lists:unzip(Facility_vehicle_pairs),
 	build_package_history_adds(Package_count-1,Domain,Tester_name,
 		[Package]++Package_id_accum,Facilities++Facility_id_accum,Vehicles++Vehicle_id_accum,History_accum++Changes).

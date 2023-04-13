@@ -6,7 +6,7 @@
 %%        Creative Commons Attribution 4.0 International License</a>
 %%
 %%
--module(query_package_history_server).
+-module(store_package_info_server).
 -behaviour(gen_server).
 
 -define(SERVER, ?MODULE).
@@ -18,15 +18,15 @@
 -include_lib("eunit/include/eunit.hrl").
 -endif.
 
+
 %% API
--export([start/0, start/3, stop/0]).
+-export([start/0,start/1,stop/0]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
          terminate/2, code_change/3]).
 
--export([query_package_history/1]).
-
+-export([store_package_info/1,store_package_info/2]).
 
 %%%===================================================================
 %%% API
@@ -54,9 +54,9 @@ start() ->
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec start(atom(), atom(), atom()) -> {ok, pid()} | ignore | {error, term()}.
-start(Registration_type, Name, Args) ->
-  gen_server:start_link({Registration_type, Name}, ?MODULE, Args, []).
+-spec start(atom()) -> {ok, pid()} | ignore | {error, term()}.
+start(Registered_name) ->
+  gen_server:start_link({local, Registered_name}, ?MODULE, [], []).
 
 
 %%--------------------------------------------------------------------
@@ -83,12 +83,7 @@ stop() -> gen_server:call(?MODULE, stop).
 %%--------------------------------------------------------------------
 -spec init(term()) -> {ok, term()}|{ok, term(), number()}|ignore |{stop, term()}.
 init([]) ->
-  case riakc_pb_socket:start_link("database.dartis.dev", 8087) of
-    {ok,Riak_pid} -> 
-      {ok,Riak_pid};
-    _ ->
-      {stop,link_failure}
-  end.
+  riakc_pb_socket:start_link("database.dartis.dev", 8087).
 
 %%--------------------------------------------------------------------
 %% @private
@@ -97,27 +92,20 @@ init([]) ->
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec handle_call(Request :: term(), From :: pid(), State :: term()) ->
+-spec handle_call(Request::term(), From::pid(), State::term()) ->
   {reply, term(), term()} |
   {reply, term(), term(), integer()} |
   {noreply, term()} |
   {noreply, term(), integer()} |
-  {stop, term(), term(), integer()} |
+  {stop, term(), term(), integer()} | 
   {stop, term(), term()}.
 
-
-handle_call({get_package_history, Package_uuid}, _From, Riak_Pid) ->
-  case riakc_pb_socket:get(Riak_Pid, <<"package">>, Package_uuid) of
-    {ok, Fetched} ->
-      %reply with the value as a binary, not the key nor the bucket.
-      {reply, binary_to_term(riakc_obj:get_value(Fetched)), Riak_Pid};
-    Error ->
-      {reply, Error, Riak_Pid}
-  end;
 handle_call(stop, _From, _State) ->
-  {stop, normal,
+  {stop,normal,
    replace_stopped,
-   down}. %% setting the server's internal state to down
+   down}; %% setting the server's internal state to down
+handle_call(_Request, _From, State) ->
+  {reply,replace_started,State}.
 
 %%--------------------------------------------------------------------
 %% @private
@@ -126,9 +114,26 @@ handle_call(stop, _From, _State) ->
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec handle_cast(Msg :: term(), State :: term()) -> {noreply, term()} |
-                                                     {noreply, term(), integer()} |
-                                                     {stop, term(), term()}.
+-spec handle_cast(Msg::term(), State::term()) -> {noreply, term()} |
+                                                 {noreply, term(), integer()} |
+                                                 {stop, term(), term()}.
+handle_cast({store_package, Key, Value}, Riak_Pid) ->
+  case Key =:= <<"">> of 
+    true ->
+      {noreply, Riak_Pid};
+    _ ->
+      case riakc_pb_socket:get(Riak_Pid, <<"package">>, Key) of
+        {ok, Fetched} ->
+          History = binary_to_term(riakc_obj:get_value(Fetched)),
+          Package = riakc_obj:new(<<"package">>, Key, [Value|History]),
+          _Status = riakc_pb_socket:put(Riak_Pid, Package),
+          {noreply, Riak_Pid};
+        _ ->
+          Package = riakc_obj:new(<<"package">>, Key, [Value]),
+          _Status = riakc_pb_socket:put(Riak_Pid, Package),
+          {noreply, Riak_Pid}
+      end
+  end;
 handle_cast(_Msg, State) ->
   {noreply, State}.
 
@@ -138,9 +143,9 @@ handle_cast(_Msg, State) ->
 %% Handling all non call/cast messages
 %%
 %% @end
--spec handle_info(Info :: term(), State :: term()) -> {noreply, term()} |
-                                                      {noreply, term(), integer()} |
-                                                      {stop, term(), term()}.
+-spec handle_info(Info::term(), State::term()) -> {noreply, term()} |
+                                                  {noreply, term(), integer()} |
+                                                  {stop, term(), term()}.
 handle_info(_Info, State) ->
   {noreply, State}.
 
@@ -154,7 +159,7 @@ handle_info(_Info, State) ->
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec terminate(Reason :: term(), term()) -> term().
+-spec terminate(Reason::term(), term()) -> term().
 terminate(_Reason, _State) ->
   ok.
 
@@ -173,42 +178,51 @@ code_change(_OldVsn, State, _Extra) ->
 %%% Internal functions
 %%%===================================================================
 
-query_package_history(Data) ->
-  gen_server:call(?SERVER, {get_package_history, maps:get(<<"package_uuid">>, Data)}).
+store_package_info(Data) ->
+  io:fwrite("Storing a package...~n"),
+  {Key, Rest} = maps:take(<<"package_uuid">>, Data),
+  gen_server:cast(?SERVER, {store_package, Key, Rest}).
+
+store_package_info(Name, Data) ->
+  {Key, Rest} = maps:take(<<"package_uuid">>, Data),
+  gen_server:cast(Name, {store_package, Key, Rest}).
 
 -ifdef(EUNIT).
 %%
 %% Unit tests go here. 
 %%
-server_start_test()->
+server_start_test_()->
   {setup,
    fun()-> 
        meck:new(riakc_pb_socket), 
        meck:expect(riakc_pb_socket, start_link, fun(_Domain, _Port) -> {ok, riak_pid} end)
    end,
-   fun()-> 
-       meck:unload(riakc_pb_socket),
-       gen_server:stop(?SERVER)
+   fun(_)-> 
+       gen_server:stop(?SERVER),
+       meck:unload(riakc_pb_socket)
    end,
    [
-    ?assertMatch({ok, _}, start())
+    ?_assertMatch({ok, _}, start())
    ]
   }.
-query_package_history_riak_test_() ->
+store_package_mock_riak_test_() ->
   {setup,
-   fun() ->
+   fun() -> 
        meck:new(riakc_obj),
        meck:new(riakc_pb_socket),
-       meck:expect(riakc_obj, get_value, fun(_Key) -> term_to_binary("history") end),
-       meck:expect(riakc_pb_socket, get, fun(_Riak_Pid, _Bucket, _Key) -> {ok, riakc_obj} end)
+       meck:expect(riakc_obj, new, fun(_Bucket, _Key, _Data) -> request end),
+       meck:expect(riakc_pb_socket, put, fun(_Riak_pid, _Request) -> status end),
+       meck:expect(riakc_pb_socket, get, fun(_Riak_Pid, _Bucket, _Key) -> {ok, riakc_obj} end),
+       meck:expect(riakc_obj, get_value, fun(_Key) -> term_to_binary("history") end)
    end,
-   fun(_) ->
+   fun(_) -> 
        meck:unload(riakc_obj),
        meck:unload(riakc_pb_socket)
    end,
    [
-    ?_assertMatch({reply, "history", riak_pid}, query_package_history_server:handle_call({get_package_history, <<"package_uuid">>}, from, riak_pid)),
-    ?_assertMatch({reply, "history", riak_pid}, query_package_history_server:handle_call({get_package_history, <<"">>}, from, riak_pid))
+    ?_assertMatch({noreply, riak_pid}, ?MODULE:handle_cast({store_package, <<"package_uuid">>, #{test=>2}}, riak_pid)),
+    ?_assertMatch({noreply, riak_pid}, ?MODULE:handle_cast({store_package, <<"package_uuid">>, #{}}, riak_pid)),
+    ?_assertMatch({noreply, riak_pid}, ?MODULE:handle_cast({store_package, <<"">>, #{}}, riak_pid))
    ]
   }.
 -endif.

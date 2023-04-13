@@ -1,12 +1,13 @@
--module(query_vehicle_history_h).
+-module(query_package_history_h).
 
 -export([init/2]).
 
 init(Req0, Opts) ->
-  io:fwrite("Query Vehicle~n"),
+  io:fwrite("Query Package~n"),
   {ok, Data, _} = cowboy_req:read_body(Req0),
   Dict = jsx:decode(Data),
-  case query_vehicle_history_server:query_vehicle_history(Dict) of
+  Worker = query_package_dispatcher:iterate_worker(query_package_dispatcher),
+  case query_package_history_server:query_package_history(Worker, Dict) of
     {error, _} ->
       Req = cowboy_req:reply(200, #{
           <<"content-type">> => <<"text/json">>

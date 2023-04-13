@@ -14,8 +14,15 @@
 
 %%% Created : 24 October 2022 by Lee Barney <barney.cit@gmail.com>
 %%%-------------------------------------------------------------------
--module(request_sup).
+-module(store_package_server_sup).
 -behaviour(supervisor).
+
+%% Only include the eunit testing library
+%% in the compiled code if testing is 
+%% being done.
+-ifdef(TEST).
+-include_lib("eunit/include/eunit.hrl").
+-endif.
 
 %%%===================================================================
 %%% Make sure to complete the documentation to match
@@ -25,7 +32,7 @@
 %% 
 -export([init/1]).
 %% event Callbacks
--export([start/1,start/3]).
+-export([start_link/0,start_link/1]).
 
 %%%===================================================================
 %%% Public API functions
@@ -40,8 +47,8 @@
 %%
 %% @end
 %%--------------------------------------------------------------------
-start(Start_info)->
-    supervisor:start_link({local,?MODULE},?MODULE,Start_info).
+start_link()->
+  supervisor:start_link({local,?MODULE},?MODULE,[]).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -53,46 +60,40 @@ start(Start_info)->
 %%
 %% @end
 %%--------------------------------------------------------------------
-start(Supervisor_name,Registration_type,Start_info)->
-    supervisor:start_link({Registration_type,Supervisor_name},?MODULE,Start_info).
+start_link(Server_names)->
+  supervisor:start_link({local,?MODULE},?MODULE,Server_names).
 
 
 %%%===================================================================
 %%% Mandatory callback functions
 %%%===================================================================
 
-init([]) ->
+init(Server_names) ->
 
-%% A supervisor specification is a record with the following mappings.
-%%
-%% supervisor_spec() = #{strategy()=>atom(),    % mandatory. Options are: 1)one_for_one, 2)one_for_all, 3)rest_for_one, and 4)simple_one_for_one.
-%%                       intensity => integer(),% mandatory. Number of restarts allowed in period.
-%%                       period => integer()}   % mandatory. A number of seconds.
-    
-    %%
-    %% define your supervisor specification here.
-    %%
+  %% A supervisor specification is a record with the following mappings.
+  %%
+  %% supervisor_spec() = #{strategy()=>atom(),    % mandatory. Options are: 1)one_for_one, 2)one_for_all, 3)rest_for_one, and 4)simple_one_for_one.
+  %%                       intensity => integer(),% mandatory. Number of restarts allowed in period.
+  %%                       period => integer()}   % mandatory. A number of seconds.
 
-    %%
-    %% generate your child specification list here.
-    %%
+  %%
+  %% define your supervisor specification here.
+  %%
 
-    %%
-    %% This function has a value that is a tuple
-    %% consisting of ok and a tuple that is the supervisor specifiation list 
-    %% followed by the list of child specifications.
-    %%
-  SupFlags = #{strategy => one_for_all,
-    intensity => 0,
-    period => 1},
-  ChildSpecs = [
-                generate_spec(store_package_info_h, worker), 
-                generate_spec(query_package_history_h, worker),
-                generate_spec(store_vehicle_info_h, worker),
-                generate_spec(query_vehicle_history_h, worker),
-                generate_spec(store_facility_info_h, worker),
-                generate_spec(query_vehicle_history_h, worker)
-               ],
+  %%
+  %% generate your child specification list here.
+  %%
+
+  %%
+  %% This function has a value that is a tuple
+  %% consisting of ok and a tuple that is the supervisor specifiation list 
+  %% followed by the list of child specifications.
+  %%
+  Server_specs = [generate_spec(store_package_info_server, Server, worker) || Server <- Server_names],
+
+  SupFlags = #{strategy => one_for_one, intensity =>1, period => 5}, 
+
+  ChildSpecs = Server_specs,
   {ok, {SupFlags, ChildSpecs}}.
 
 %%%===================================================================
@@ -100,7 +101,7 @@ init([]) ->
 %%%===================================================================
 
 %%@private
-generate_spec(Module,Type)->
+% generate_spec(Module,Type)->
 %%
 %% A child Specification is a record with the following mappings.
 %%
@@ -114,10 +115,26 @@ generate_spec(Module,Type)->
 %%                                                  % such a list is unknown, for example when the child is a 
 %%                                                  % gen_event manager with some unknown types of gen_event handler
 %%                                                  % modules to be added later.  
-        #{id => Module,
-          start => {Module,start_link,[]},
-          restart => permanent,
-          shutdown => 2000,
-          type => Type,
-          modules => [Module]}.
+% #{id => Module,
+%   start => {Module,start,[]},
+%   restart => permanent,
+%   shutdown => 2000,
+%   type => Type,
+%   modules => [Module]}.
 
+%%@private
+generate_spec(Module,Name,Type)->
+  #{id => Name,
+    start => {Module, start, [Name]},
+    restart => permanent,
+    shutdown => 2000,
+    type => Type,
+    modules => [Module]}.
+
+%% This code is included in the compiled code only if 
+%% 'rebar3 eunit' is being executed.
+-ifdef(EUNIT).
+%%
+%% Unit tests go here. 
+%%
+-endif.
