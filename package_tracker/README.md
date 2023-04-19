@@ -1,8 +1,6 @@
 package_tracker
 =====
 
-### Description
-
 Our class project was to create an application that would be able to handle tracking a large number of packages being shipped as it travels from start to finish. The project is meant to mock what might exist in a large-scale courier service like FedEx or UPS. Our application is able to track packages, courier facilities, and courier vehicles. The end goal is to be able to handle thousands of packages and requests.
 
 ### Environment
