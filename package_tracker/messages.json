@@ -1,0 +1,89 @@
+{
+    "/start_tracking": {
+        "package_id": string(UUID),
+        "holder_id": string(UUID),
+        "time_stamp": UINT_32
+    },
+    "/enter_holder": {
+        "package_id": string(UUID),
+        "holder_id": string(UUID),
+        "time_stamp": UINT_32
+    },
+    "/leave_holder": {
+        "package_id": string(UUID),
+        "holder_id": string(UUID),
+        "time_stamp": UINT_32,
+        "delivered": bool
+    },
+    "/log_location": {
+        "holder_id": string(UUID),
+        "location": {
+            "lat": real,
+            "long": real
+        },
+        "time_stamp": UINT_32
+    },
+    "/get_package_history_usr": {
+        "in": {
+            "package_id": string(UUID)
+        },
+        "out": {
+            "holders_info": [
+                {
+                    "facility_city": string,
+                    "facility_state": string,
+                    "entry_time": UINT_32,
+                    "exit_time": UINT_32 or nil,
+                    "in_transit": boolean
+                },
+                ...
+            ],
+            "delivered": bool
+        }
+    },
+    "/get_package_history_mngt": {
+        "in": {
+            "package_id": string(UUID)
+        },
+        "out": {
+            "holders_info": [
+                {
+                    "holder_id": string(UUID),
+                    "entry_time": UINT_32,
+                    "exit_time": UINT_32 or nil)
+                },
+                ...
+            ],
+            "delivered": bool
+        }
+    },
+    "/get_holder_info": {
+        "in": {
+            "holder_id": string(UUID)
+        },
+        "out": {
+            "holder_type": string,
+            "location": {
+                "lat": real,
+                "long": real
+            }
+            or
+            {
+                "street_address_1": string,
+                "street_address_2": string,
+                "city": string,
+                "state": string,
+                "zipcode": string
+            }
+        }
+    },
+    "/get_package_shelf": {
+        "in": {
+            "package_id": string(UUID)
+        },
+        "out": {
+            "holder_id": string(UUID),
+            "shelf_location": string
+        }
+    }
+}
