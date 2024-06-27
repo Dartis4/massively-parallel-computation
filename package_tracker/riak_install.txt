@@ -1,0 +1,25 @@
+Installing Riak
+1. Create Droplet and add the startup script copied from here (https://docs.digitalocean.com/tutorials/recommended-droplet-setup/)
+2. ssh into the droplet. Set password.
+3. ssh into the droplet and sudo reboot. ssh into the droplet again.
+4. sudo apt upgrade
+5. sudo apt update
+6. sudo apt install build-essential
+7. sudo apt install libpam0g-dev
+8. sudo apt install erlang
+9. sudo apt install cmake
+    10. Go to the GitHub repo and clone the repo (https://github.com/basho/riak)
+    11.  cd riak
+    12. sudo ./rebar3 get-deps
+    13. sudo make rel
+    14. Edit <git_dir>/riak/rel/riak/etc/riak.config 
+a. replace 127.0.0.1 in the value of the key listener.http.internal with the ip address of the droplet. Make sure that you don’t change the port number.
+b. replace 127.0.0.1 in the value of the key listener.protobuf.internal with the ip address of the droplet. Make sure that you don’t change the port number.
+   15. sudo riak daemon
+
+
+Testing riak and the client connection
+1. In the shell of your running rebar3 project that includes riakc, enter,
+a. {ok, Pid} = riack_pb_socket:start_link(<ipaddress or subdomain of server>, 8087).
+b. riakc_pb_socket:ping(Pid).
+2. If everything is set up correctly, and the universe is symmetrical, you will get a result of pong.
